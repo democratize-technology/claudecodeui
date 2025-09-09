@@ -144,6 +144,7 @@ function GitPanel({ selectedProject, isMobile }) {
       }
     } catch (error) {
       console.error('Error fetching git status:', error);
+      showErrorMessage('Unable to connect to Git. Please check your network connection.', 'Git status');
     } finally {
       setIsLoading(false);
     }
@@ -228,9 +229,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchGitStatus(); // Refresh status
       } else {
         console.error('Failed to create branch:', data.error);
+        showErrorMessage(data.error, 'Branch creation');
       }
     } catch (error) {
       console.error('Error creating branch:', error);
+      showErrorMessage('Network error during branch creation. Please try again.', 'Branch creation');
     } finally {
       setIsCreatingBranch(false);
     }
@@ -254,9 +257,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchRemoteStatus();
       } else {
         console.error('Fetch failed:', data.error);
+        showErrorMessage(data.error, 'Fetch operation');
       }
     } catch (error) {
       console.error('Error fetching from remote:', error);
+      showErrorMessage('Network error during fetch operation. Please try again.', 'Fetch operation');
     } finally {
       setIsFetching(false);
     }
