@@ -612,41 +612,60 @@ function handleShellConnection(ws) {
                     } else {
                         // Use claude command (default) or initialCommand if provided
                         const command = initialCommand || 'claude';
+                        
+                        // SECURITY FIX: Build command without exposing token in command line
                         if (os.platform() === 'win32') {
                             if (hasSession && sessionId) {
                                 // Try to resume session, but with fallback to new session if it fails
-                                shellCommand = `Set-Location -Path "${projectPath}"; $env:CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}"; claude --resume ${sessionId}; if ($LASTEXITCODE -ne 0) { $env:CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}"; claude }`;
+                                shellCommand = `Set-Location -Path "${projectPath}"; claude --resume ${sessionId}; if ($LASTEXITCODE -ne 0) { claude }`;
                             } else {
-                                shellCommand = `Set-Location -Path "${projectPath}"; $env:CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}"; ${command}`;
+                                shellCommand = `Set-Location -Path "${projectPath}"; ${command}`;
                             }
                         } else {
                             if (hasSession && sessionId) {
-                                shellCommand = `cd "${projectPath}" && env CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}" claude --resume ${sessionId} || env CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}" claude`;
+                                shellCommand = `cd "${projectPath}" && claude --resume ${sessionId} || claude`;
                             } else {
-                                shellCommand = `cd "${projectPath}" && env CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}" ${command}`;
+                                shellCommand = `cd "${projectPath}" && ${command}`;
                             }
                         }
                     }
 
-                    console.log('🔧 Executing shell command:', shellCommand);
+                    // SECURITY FIX: Remove token from debug logs
+                    console.log('🔧 Executing shell command (with secure auth):', shellCommand.replace(/CLAUDE_CODE_OAUTH_TOKEN="[^"]*"/g, 'CLAUDE_CODE_OAUTH_TOKEN="[REDACTED]"'));
 
                     // Use appropriate shell based on platform
                     const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
                     const shellArgs = os.platform() === 'win32' ? ['-Command', shellCommand] : ['-c', shellCommand];
+
+                    // SECURITY FIX: Pass auth token securely via environment variables
+                    const tokenPresent = !!(process.env.CLAUDE_CODE_OAUTH_TOKEN);
+                    const tokenValid = tokenPresent && process.env.CLAUDE_CODE_OAUTH_TOKEN.length > 20;
+                    
+                    if (tokenPresent && tokenValid) {
+                        console.log('🔑 Shell will use secure CLAUDE_CODE_OAUTH_TOKEN authentication');
+                    } else if (tokenPresent && !tokenValid) {
+                        console.log('⚠️  CLAUDE_CODE_OAUTH_TOKEN found but appears invalid');
+                    } else {
+                        console.log('⚠️  No CLAUDE_CODE_OAUTH_TOKEN found, Claude CLI may prompt for authentication');
+                    }
+                    
+                    const secureEnv = {
+                        ...process.env,
+                        TERM: 'xterm-256color',
+                        // Ensure CLAUDE_CODE_OAUTH_TOKEN is available for Claude CLI authentication
+                        CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN || '',
+                        COLORTERM: 'truecolor',
+                        FORCE_COLOR: '3',
+                        // Override browser opening commands to echo URL for detection
+                        BROWSER: os.platform() === 'win32' ? 'echo "OPEN_URL:"' : 'echo "OPEN_URL:"'
+                    };
 
                     shellProcess = pty.spawn(shell, shellArgs, {
                         name: 'xterm-256color',
                         cols: 80,
                         rows: 24,
                         cwd: process.env.HOME || (os.platform() === 'win32' ? process.env.USERPROFILE : '/'),
-                        env: {
-                            ...process.env,
-                            TERM: 'xterm-256color',
-                            COLORTERM: 'truecolor',
-                            FORCE_COLOR: '3',
-                            // Override browser opening commands to echo URL for detection
-                            BROWSER: os.platform() === 'win32' ? 'echo "OPEN_URL:"' : 'echo "OPEN_URL:"'
-                        }
+                        env: secureEnv
                     });
 
                     console.log('🟢 Shell process started with PTY, PID:', shellProcess.pid);

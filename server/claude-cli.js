@@ -235,10 +235,29 @@ async function spawnClaude(command, options = {}, ws) {
     console.log('🔍 Full command args:', JSON.stringify(args, null, 2));
     console.log('🔍 Final Claude command will be: claude ' + args.join(' '));
     
+    // Prepare environment with CLAUDE_CODE_OAUTH_TOKEN
+    const claudeEnv = { 
+      ...process.env,
+      // Ensure CLAUDE_CODE_OAUTH_TOKEN is available for Claude CLI authentication
+      CLAUDE_CODE_OAUTH_TOKEN: process.env.CLAUDE_CODE_OAUTH_TOKEN || ''
+    };
+    
+    // Validate and debug log for auth token
+    const tokenPresent = !!claudeEnv.CLAUDE_CODE_OAUTH_TOKEN;
+    const tokenValid = tokenPresent && claudeEnv.CLAUDE_CODE_OAUTH_TOKEN.length > 20; // Basic validation
+    
+    if (tokenPresent && tokenValid) {
+      console.log('🔑 Claude CLI will use CLAUDE_CODE_OAUTH_TOKEN authentication');
+    } else if (tokenPresent && !tokenValid) {
+      console.log('⚠️  CLAUDE_CODE_OAUTH_TOKEN found but appears invalid (too short)');
+    } else {
+      console.log('⚠️  No CLAUDE_CODE_OAUTH_TOKEN found, Claude CLI may prompt for authentication');
+    }
+    
     const claudeProcess = spawnFunction('claude', args, {
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env } // Inherit all environment variables
+      env: claudeEnv
     });
     
     // Attach temp file info to process for cleanup later
