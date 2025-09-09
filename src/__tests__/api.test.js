@@ -93,6 +93,27 @@ describe('API utilities', () => {
         },
       });
     });
+
+    it('should not set Content-Type for FormData bodies', async () => {
+      localStorageMock.getItem.mockReturnValue('token');
+      fetch.mockResolvedValue({ json: () => Promise.resolve({}) });
+
+      const formData = new FormData();
+      formData.append('test', 'data');
+
+      await authenticatedFetch('/test-endpoint', {
+        method: 'POST',
+        body: formData,
+      });
+
+      expect(fetch).toHaveBeenCalledWith('/test-endpoint', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Authorization': 'Bearer token',
+        },
+      });
+    });
   });
 
   describe('api.auth', () => {
@@ -169,7 +190,7 @@ describe('API utilities', () => {
   });
 
   describe('api.transcribe', () => {
-    it('should handle FormData with empty headers object', async () => {
+    it('should handle FormData correctly by not setting Content-Type', async () => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
         json: () => Promise.resolve({ transcription: 'test' }),
@@ -180,13 +201,12 @@ describe('API utilities', () => {
 
       await api.transcribe(formData);
 
-      // The authenticatedFetch function will still merge in default headers,
-      // but the API call is configured to pass empty headers
+      // The authenticatedFetch function should detect FormData and not set Content-Type,
+      // allowing the browser to set the proper boundary parameter
       expect(fetch).toHaveBeenCalledWith('/api/transcribe', {
         method: 'POST',
         body: formData,
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer token',
         },
       });
