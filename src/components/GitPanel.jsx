@@ -31,6 +31,7 @@ function GitPanel({ selectedProject, isMobile }) {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isCommitAreaCollapsed, setIsCommitAreaCollapsed] = useState(isMobile); // Collapsed by default on mobile
   const [confirmAction, setConfirmAction] = useState(null); // { type: 'discard|commit|pull|push', file?: string, message?: string }
+  const [errorMessage, setErrorMessage] = useState(null); // For displaying user-friendly error messages
   const textareaRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -56,6 +57,37 @@ function GitPanel({ selectedProject, isMobile }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Helper function to show user-friendly error messages
+  const showErrorMessage = (error, operation = 'Git operation') => {
+    let friendlyMessage = `${operation} failed`;
+    
+    if (typeof error === 'string') {
+      // Common Git error patterns and their user-friendly messages
+      if (error.includes('not a git repository')) {
+        friendlyMessage = 'This folder is not a Git repository. Initialize Git first.';
+      } else if (error.includes('Permission denied') || error.includes('Authentication failed')) {
+        friendlyMessage = 'Authentication failed. Please check your Git credentials.';
+      } else if (error.includes('Connection refused') || error.includes('Could not resolve hostname')) {
+        friendlyMessage = 'Cannot connect to remote repository. Check your internet connection.';
+      } else if (error.includes('Your branch is behind')) {
+        friendlyMessage = 'Your local branch is behind the remote. Pull changes first.';
+      } else if (error.includes('would be overwritten by merge')) {
+        friendlyMessage = 'Local changes would be overwritten. Commit or stash your changes first.';
+      } else if (error.includes('No such remote')) {
+        friendlyMessage = 'Remote repository not found. Check the remote URL.';
+      } else if (error.includes('non-fast-forward')) {
+        friendlyMessage = 'Push rejected. Pull the latest changes and try again.';
+      } else {
+        // Fallback to a cleaned up version of the error
+        friendlyMessage = error.replace(/^(error:|fatal:)\s*/i, '').trim();
+      }
+    }
+    
+    setErrorMessage(friendlyMessage);
+    // Auto-clear error message after 10 seconds
+    setTimeout(() => setErrorMessage(null), 10000);
+  };
 
   const fetchGitStatus = async () => {
     if (!selectedProject) return;
@@ -229,10 +261,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchRemoteStatus();
       } else {
         console.error('Pull failed:', data.error);
-        // TODO: Show user-friendly error message
+        showErrorMessage(data.error, 'Pull operation');
       }
     } catch (error) {
       console.error('Error pulling from remote:', error);
+      showErrorMessage('Network error during pull operation. Please try again.', 'Pull operation');
     } finally {
       setIsPulling(false);
     }
@@ -256,10 +289,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchRemoteStatus();
       } else {
         console.error('Push failed:', data.error);
-        // TODO: Show user-friendly error message
+        showErrorMessage(data.error, 'Push operation');
       }
     } catch (error) {
       console.error('Error pushing to remote:', error);
+      showErrorMessage('Network error during push operation. Please try again.', 'Push operation');
     } finally {
       setIsPushing(false);
     }
@@ -284,10 +318,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchRemoteStatus();
       } else {
         console.error('Publish failed:', data.error);
-        // TODO: Show user-friendly error message
+        showErrorMessage(data.error, 'Publish operation');
       }
     } catch (error) {
       console.error('Error publishing branch:', error);
+      showErrorMessage('Network error during publish operation. Please try again.', 'Publish operation');
     } finally {
       setIsPublishing(false);
     }
@@ -877,6 +912,22 @@ function GitPanel({ selectedProject, isMobile }) {
           </button>
         </div>
       </div>
+
+      {/* Error Message Display */}
+      {errorMessage && (
+        <div className="mx-4 mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+            <span className="text-sm text-red-700 dark:text-red-300">{errorMessage}</span>
+            <button
+              onClick={() => setErrorMessage(null)}
+              className="ml-auto text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Git Repository Not Found Message */}
       {gitStatus?.error ? (
