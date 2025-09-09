@@ -160,6 +160,7 @@ function GitPanel({ selectedProject, isMobile }) {
       }
     } catch (error) {
       console.error('Error fetching branches:', error);
+      showErrorMessage('Unable to load branches. Please check your network connection.', 'Branch loading');
     }
   };
 
@@ -177,6 +178,7 @@ function GitPanel({ selectedProject, isMobile }) {
       }
     } catch (error) {
       console.error('Error fetching remote status:', error);
+      showErrorMessage('Unable to check remote status. Please verify your network connection.', 'Remote status');
       setRemoteStatus(null);
     }
   };
@@ -199,9 +201,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchGitStatus(); // Refresh status after branch switch
       } else {
         console.error('Failed to switch branch:', data.error);
+        showErrorMessage(data.error, 'Branch switch');
       }
     } catch (error) {
       console.error('Error switching branch:', error);
+      showErrorMessage('Network error during branch switch. Please try again.', 'Branch switch');
     }
   };
 
@@ -374,9 +378,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchGitStatus();
       } else {
         console.error('Discard failed:', data.error);
+        showErrorMessage(data.error, 'Discard changes');
       }
     } catch (error) {
       console.error('Error discarding changes:', error);
+      showErrorMessage('Network error during discard operation. Please try again.', 'Discard changes');
     }
   };
 
@@ -402,9 +408,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchGitStatus();
       } else {
         console.error('Delete failed:', data.error);
+        showErrorMessage(data.error, 'Delete file');
       }
     } catch (error) {
       console.error('Error deleting untracked file:', error);
+      showErrorMessage('Network error during file deletion. Please try again.', 'Delete file');
     }
   };
 
@@ -437,6 +445,7 @@ function GitPanel({ selectedProject, isMobile }) {
       }
     } catch (error) {
       console.error(`Error executing ${type}:`, error);
+      showErrorMessage(`Network error during ${type} operation. Please try again.`, `${type.charAt(0).toUpperCase() + type.slice(1)} operation`);
     }
   };
 
@@ -453,6 +462,7 @@ function GitPanel({ selectedProject, isMobile }) {
       }
     } catch (error) {
       console.error('Error fetching file diff:', error);
+      showErrorMessage('Unable to load file changes. Please refresh and try again.', 'File diff');
     }
   };
 
@@ -466,6 +476,7 @@ function GitPanel({ selectedProject, isMobile }) {
       }
     } catch (error) {
       console.error('Error fetching commits:', error);
+      showErrorMessage('Unable to load commit history. Please check your network connection.', 'Commit history');
     }
   };
 
@@ -482,6 +493,7 @@ function GitPanel({ selectedProject, isMobile }) {
       }
     } catch (error) {
       console.error('Error fetching commit diff:', error);
+      showErrorMessage('Unable to load commit details. Please refresh and try again.', 'Commit details');
     }
   };
 
@@ -502,9 +514,11 @@ function GitPanel({ selectedProject, isMobile }) {
         setCommitMessage(data.message);
       } else {
         console.error('Failed to generate commit message:', data.error);
+        showErrorMessage(data.error, 'Generate commit message');
       }
     } catch (error) {
       console.error('Error generating commit message:', error);
+      showErrorMessage('Network error while generating commit message. Please try again.', 'Generate commit message');
     } finally {
       setIsGeneratingMessage(false);
     }
@@ -574,9 +588,11 @@ function GitPanel({ selectedProject, isMobile }) {
         fetchRemoteStatus();
       } else {
         console.error('Commit failed:', data.error);
+        showErrorMessage(data.error, 'Commit operation');
       }
     } catch (error) {
       console.error('Error committing changes:', error);
+      showErrorMessage('Network error during commit. Please try again.', 'Commit operation');
     } finally {
       setIsCommitting(false);
     }
