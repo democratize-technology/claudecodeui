@@ -615,15 +615,15 @@ function handleShellConnection(ws) {
                         if (os.platform() === 'win32') {
                             if (hasSession && sessionId) {
                                 // Try to resume session, but with fallback to new session if it fails
-                                shellCommand = `Set-Location -Path "${projectPath}"; claude --resume ${sessionId}; if ($LASTEXITCODE -ne 0) { claude }`;
+                                shellCommand = `Set-Location -Path "${projectPath}"; $env:CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}"; claude --resume ${sessionId}; if ($LASTEXITCODE -ne 0) { $env:CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}"; claude }`;
                             } else {
-                                shellCommand = `Set-Location -Path "${projectPath}"; ${command}`;
+                                shellCommand = `Set-Location -Path "${projectPath}"; $env:CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}"; ${command}`;
                             }
                         } else {
                             if (hasSession && sessionId) {
-                                shellCommand = `cd "${projectPath}" && claude --resume ${sessionId} || claude`;
+                                shellCommand = `cd "${projectPath}" && env CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}" claude --resume ${sessionId} || env CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}" claude`;
                             } else {
-                                shellCommand = `cd "${projectPath}" && ${command}`;
+                                shellCommand = `cd "${projectPath}" && env CLAUDE_CODE_OAUTH_TOKEN="${process.env.CLAUDE_CODE_OAUTH_TOKEN || ''}" ${command}`;
                             }
                         }
                     }
