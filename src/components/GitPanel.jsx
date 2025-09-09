@@ -32,6 +32,7 @@ function GitPanel({ selectedProject, isMobile }) {
   const [isCommitAreaCollapsed, setIsCommitAreaCollapsed] = useState(isMobile); // Collapsed by default on mobile
   const [confirmAction, setConfirmAction] = useState(null); // { type: 'discard|commit|pull|push', file?: string, message?: string }
   const [errorMessage, setErrorMessage] = useState(null); // For displaying user-friendly error messages
+  const errorTimeoutRef = useRef(null); // For managing error message auto-clear timeout
   const textareaRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -56,6 +57,15 @@ function GitPanel({ selectedProject, isMobile }) {
     
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) {
+        clearTimeout(errorTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Helper function to show user-friendly error messages
@@ -85,8 +95,17 @@ function GitPanel({ selectedProject, isMobile }) {
     }
     
     setErrorMessage(friendlyMessage);
+    
+    // Clear any existing timeout before setting a new one
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+    
     // Auto-clear error message after 10 seconds
-    setTimeout(() => setErrorMessage(null), 10000);
+    errorTimeoutRef.current = setTimeout(() => {
+      setErrorMessage(null);
+      errorTimeoutRef.current = null;
+    }, 10000);
   };
 
   const fetchGitStatus = async () => {
@@ -915,13 +934,24 @@ function GitPanel({ selectedProject, isMobile }) {
 
       {/* Error Message Display */}
       {errorMessage && (
-        <div className="mx-4 mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <div 
+          className="mx-4 mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+          role="alert"
+          aria-live="polite"
+        >
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
             <span className="text-sm text-red-700 dark:text-red-300">{errorMessage}</span>
             <button
-              onClick={() => setErrorMessage(null)}
+              onClick={() => {
+                setErrorMessage(null);
+                if (errorTimeoutRef.current) {
+                  clearTimeout(errorTimeoutRef.current);
+                  errorTimeoutRef.current = null;
+                }
+              }}
               className="ml-auto text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+              aria-label="Dismiss error message"
             >
               <X className="w-4 h-4" />
             </button>
