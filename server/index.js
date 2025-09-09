@@ -8,7 +8,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../.env') });
+const envResult = dotenv.config({ 
+    path: path.join(__dirname, '../.env'),
+    debug: false // Suppress verbose logging
+});
+
+if (envResult.error) {
+    console.log('Environment file loading failed:', envResult.error.message);
+}
 
 console.log('PORT from env:', process.env.PORT);
 
