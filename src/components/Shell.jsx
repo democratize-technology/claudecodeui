@@ -263,7 +263,10 @@ function Shell({
 
     try {
       terminal.current.loadAddon(webglAddon);
-    } catch (error) {}
+    } catch (error) {
+      console.warn('WebGL addon failed to load, falling back to canvas renderer:', error.message);
+      // Terminal will continue to work without WebGL acceleration
+    }
 
     terminal.current.open(terminalRef.current);
 
@@ -377,7 +380,10 @@ function Shell({
             ws: ws.current,
             isConnected: isConnected
           });
-        } catch (error) {}
+        } catch (error) {
+          console.error('Failed to store shell session:', error.message);
+          // Session won't be cached, but terminal will still function
+        }
       }
     };
   }, [terminalRef.current, selectedProject, selectedSession, isRestarting]);
@@ -521,7 +527,10 @@ function Shell({
             // Handle explicit URL opening requests from server
             window.open(data.url, '_blank');
           }
-        } catch (error) {}
+        } catch (error) {
+          console.error('Failed to process WebSocket message:', error.message, 'Raw data:', event.data);
+          // Continue operation - individual message failures shouldn't break the terminal
+        }
       };
 
       ws.current.onclose = (event) => {
