@@ -3,7 +3,12 @@ import React from 'react';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null, retryCount: 0 };
+    this.state = { 
+      hasError: false, 
+      error: null, 
+      errorInfo: null, 
+      retryCount: 0
+    };
   }
 
   static getDerivedStateFromError(error) {
@@ -26,7 +31,11 @@ class ErrorBoundary extends React.Component {
     // Reset error state when children change after a manual reset attempt
     // This helps with cases where parent components re-render with new children
     // Only reset if we manually clicked "Try Again" (retryCount > 0) and props changed
-    if (this.state.hasError && this.state.retryCount > 0 && prevProps.children !== this.props.children) {
+    if (
+      this.state.hasError && 
+      this.state.retryCount > 0 && 
+      prevProps.children !== this.props.children
+    ) {
       this.setState({
         hasError: false,
         error: null,
@@ -68,13 +77,17 @@ class ErrorBoundary extends React.Component {
             <div className='mt-4'>
               <button
                 onClick={() => {
-                  this.setState({ 
-                    hasError: false, 
-                    error: null, 
-                    errorInfo: null, 
-                    retryCount: this.state.retryCount + 1 
-                  });
+                  // Call onRetry callback before state update
                   if (this.props.onRetry) this.props.onRetry();
+                  
+                  // Use functional setState to prevent race conditions
+                  // This ensures atomic state update with correct retryCount increment
+                  this.setState(prevState => ({
+                    hasError: false,
+                    error: null,
+                    errorInfo: null,
+                    retryCount: prevState.retryCount + 1
+                  }));
                 }}
                 className='bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500'
               >
