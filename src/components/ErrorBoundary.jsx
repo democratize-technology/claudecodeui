@@ -1,4 +1,5 @@
 import React from 'react';
+import { processErrorBoundaryError, ERROR_SEVERITY } from '../utils/errorHandling';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -7,6 +8,7 @@ class ErrorBoundary extends React.Component {
       hasError: false, 
       error: null, 
       errorInfo: null, 
+      processedError: null,
       retryCount: 0
     };
   }
@@ -17,14 +19,20 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Log the error details
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-
-    // You can also log the error to an error reporting service here
+    // Process error with standardized error handling
+    const processedError = processErrorBoundaryError(error, errorInfo);
+    
+    // Store both original and processed error information
     this.setState({
       error: error,
-      errorInfo: errorInfo
+      errorInfo: errorInfo,
+      processedError: processedError
     });
+
+    // Call onError callback if provided for custom error reporting
+    if (this.props.onError) {
+      this.props.onError(processedError);
+    }
   }
 
   componentDidUpdate(prevProps) {
@@ -39,7 +47,8 @@ class ErrorBoundary extends React.Component {
       this.setState({
         hasError: false,
         error: null,
-        errorInfo: null
+        errorInfo: null,
+        processedError: null
       });
     }
   }
@@ -63,14 +72,53 @@ class ErrorBoundary extends React.Component {
               <h3 className='ml-3 text-sm font-medium text-red-800'>Something went wrong</h3>
             </div>
             <div className='text-sm text-red-700'>
-              <p className='mb-2'>An error occurred while loading the chat interface.</p>
+              {/* Show user-friendly message from standardized error handling */}
+              <p className='mb-2'>
+                {this.state.processedError?.userMessage || 'An error occurred while loading the interface.'}
+              </p>
+              
+              {/* Show error ID for tracking */}
+              {this.state.processedError?.id && (
+                <p className='text-xs text-red-600 mb-2 font-mono'>
+                  Error ID: {this.state.processedError.id}
+                </p>
+              )}
+              
+              {/* Show severity indicator */}
+              {this.state.processedError?.severity && (
+                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mb-2 ${
+                  this.state.processedError.severity === ERROR_SEVERITY.CRITICAL ? 'bg-red-200 text-red-800' :
+                  this.state.processedError.severity === ERROR_SEVERITY.HIGH ? 'bg-orange-200 text-orange-800' :
+                  'bg-yellow-200 text-yellow-800'
+                }`}>
+                  {this.state.processedError.severity.toUpperCase()} ERROR
+                </div>
+              )}
+              
               {this.props.showDetails && this.state.error && (
                 <details className='mt-4'>
-                  <summary className='cursor-pointer text-xs font-mono'>Error Details</summary>
-                  <pre className='mt-2 text-xs bg-red-100 p-2 rounded overflow-auto max-h-40'>
-                    {this.state.error.toString()}
-                    {this.state.errorInfo && this.state.errorInfo.componentStack}
-                  </pre>
+                  <summary className='cursor-pointer text-xs font-mono'>Technical Details</summary>
+                  <div className='mt-2 text-xs bg-red-100 p-2 rounded overflow-auto max-h-40'>
+                    <div className='mb-2'>
+                      <strong>Error:</strong> {this.state.error.toString()}
+                    </div>
+                    {this.state.processedError?.category && (
+                      <div className='mb-2'>
+                        <strong>Category:</strong> {this.state.processedError.category}
+                      </div>
+                    )}
+                    {this.state.processedError?.timestamp && (
+                      <div className='mb-2'>
+                        <strong>Time:</strong> {new Date(this.state.processedError.timestamp).toLocaleString()}
+                      </div>
+                    )}
+                    {this.state.errorInfo && this.state.errorInfo.componentStack && (
+                      <div>
+                        <strong>Component Stack:</strong>
+                        <pre className='mt-1 whitespace-pre-wrap'>{this.state.errorInfo.componentStack}</pre>
+                      </div>
+                    )}
+                  </div>
                 </details>
               )}
             </div>
@@ -86,6 +134,7 @@ class ErrorBoundary extends React.Component {
                     hasError: false,
                     error: null,
                     errorInfo: null,
+                    processedError: null,
                     retryCount: prevState.retryCount + 1
                   }));
                 }}
