@@ -60,6 +60,7 @@ import taskmasterRoutes from './routes/taskmaster.js';
 import mcpUtilsRoutes from './routes/mcp-utils.js';
 import { initializeDatabase } from './database/db.js';
 import { validateApiKey, authenticateToken, authenticateWebSocket } from './middleware/auth.js';
+import { validateAndSanitizePath, safeReadFile, safeWriteFile, safeFileExists } from './utils/path-security.js';
 
 // File system watcher for projects folder
 let projectsWatcher = null;
@@ -322,15 +323,23 @@ app.get('/api/projects/:projectName/file', authenticateToken, async (req, res) =
 
         console.log('📄 File read request:', projectName, filePath);
 
-        // Using fsPromises from import
-
-        // Security check - ensure the path is safe and absolute
-        if (!filePath || !path.isAbsolute(filePath)) {
-            return res.status(400).json({ error: 'Invalid file path' });
+        // SECURITY FIX: Validate and sanitize the file path to prevent path traversal
+        if (!filePath || typeof filePath !== 'string') {
+            return res.status(400).json({ error: 'Invalid file path: must be a non-empty string' });
         }
 
-        const content = await fsPromises.readFile(filePath, 'utf8');
-        res.json({ content, path: filePath });
+        let validatedPath;
+        try {
+            // Validate the path and ensure it's within allowed directories
+            validatedPath = validateAndSanitizePath(filePath);
+        } catch (securityError) {
+            console.warn('🚨 Path traversal attempt blocked:', filePath, securityError.message);
+            return res.status(400).json({ error: `Security violation: ${securityError.message}` });
+        }
+
+        // Use secure file reading function
+        const content = await safeReadFile(validatedPath);
+        res.json({ content, path: validatedPath });
     } catch (error) {
         console.error('Error reading file:', error);
         if (error.code === 'ENOENT') {
@@ -351,27 +360,32 @@ app.get('/api/projects/:projectName/files/content', authenticateToken, async (re
 
         console.log('🖼️ Binary file serve request:', projectName, filePath);
 
-        // Using fs from import
-        // Using mime from import
-
-        // Security check - ensure the path is safe and absolute
-        if (!filePath || !path.isAbsolute(filePath)) {
-            return res.status(400).json({ error: 'Invalid file path' });
+        // SECURITY FIX: Validate and sanitize the file path to prevent path traversal
+        if (!filePath || typeof filePath !== 'string') {
+            return res.status(400).json({ error: 'Invalid file path: must be a non-empty string' });
         }
 
-        // Check if file exists
+        let validatedPath;
         try {
-            await fsPromises.access(filePath);
-        } catch (error) {
+            // Validate the path and ensure it's within allowed directories
+            validatedPath = validateAndSanitizePath(filePath);
+        } catch (securityError) {
+            console.warn('🚨 Path traversal attempt blocked:', filePath, securityError.message);
+            return res.status(400).json({ error: `Security violation: ${securityError.message}` });
+        }
+
+        // Check if file exists using secure function
+        const fileExists = await safeFileExists(validatedPath);
+        if (!fileExists) {
             return res.status(404).json({ error: 'File not found' });
         }
 
         // Get file extension and set appropriate content type
-        const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+        const mimeType = mime.lookup(validatedPath) || 'application/octet-stream';
         res.setHeader('Content-Type', mimeType);
 
-        // Stream the file
-        const fileStream = fs.createReadStream(filePath);
+        // Stream the file using validated path
+        const fileStream = fs.createReadStream(validatedPath);
         fileStream.pipe(res);
 
         fileStream.on('error', (error) => {
@@ -397,32 +411,41 @@ app.put('/api/projects/:projectName/file', authenticateToken, async (req, res) =
 
         console.log('💾 File save request:', projectName, filePath);
 
-        // Using fsPromises from import
-
-        // Security check - ensure the path is safe and absolute
-        if (!filePath || !path.isAbsolute(filePath)) {
-            return res.status(400).json({ error: 'Invalid file path' });
+        // SECURITY FIX: Validate and sanitize the file path to prevent path traversal
+        if (!filePath || typeof filePath !== 'string') {
+            return res.status(400).json({ error: 'Invalid file path: must be a non-empty string' });
         }
 
         if (content === undefined) {
             return res.status(400).json({ error: 'Content is required' });
         }
 
-        // Create backup of original file
+        let validatedPath;
         try {
-            const backupPath = filePath + '.backup.' + Date.now();
-            await fsPromises.copyFile(filePath, backupPath);
-            console.log('📋 Created backup:', backupPath);
+            // Validate the path and ensure it's within allowed directories
+            validatedPath = validateAndSanitizePath(filePath);
+        } catch (securityError) {
+            console.warn('🚨 Path traversal attempt blocked:', filePath, securityError.message);
+            return res.status(400).json({ error: `Security violation: ${securityError.message}` });
+        }
+
+        // Create backup of original file using secure path validation
+        try {
+            const backupPath = validatedPath + '.backup.' + Date.now();
+            // Validate backup path as well
+            const validatedBackupPath = validateAndSanitizePath(backupPath);
+            await fsPromises.copyFile(validatedPath, validatedBackupPath);
+            console.log('📋 Created backup:', validatedBackupPath);
         } catch (backupError) {
             console.warn('Could not create backup:', backupError.message);
         }
 
-        // Write the new content
-        await fsPromises.writeFile(filePath, content, 'utf8');
+        // Write the new content using secure function
+        await safeWriteFile(validatedPath, content);
 
         res.json({
             success: true,
-            path: filePath,
+            path: validatedPath,
             message: 'File saved successfully'
         });
     } catch (error) {

@@ -65,6 +65,7 @@ import crypto from 'crypto';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import os from 'os';
+import { validateAndSanitizePath, safeJoin, safeReadFile, safeFileExists } from './utils/path-security.js';
 
 // Import TaskMaster detection functions
 async function detectTaskMasterFolder(projectPath) {
@@ -90,7 +91,7 @@ async function detectTaskMasterFolder(projectPath) {
             throw error;
         }
 
-        // Check for key TaskMaster files
+        // SECURITY FIX: Safely check for key TaskMaster files
         const keyFiles = [
             'tasks/tasks.json',
             'config.json'
@@ -100,10 +101,13 @@ async function detectTaskMasterFolder(projectPath) {
         let hasEssentialFiles = true;
 
         for (const file of keyFiles) {
-            const filePath = path.join(taskMasterPath, file);
             try {
-                await fs.access(filePath);
-                fileStatus[file] = true;
+                const filePath = safeJoin(taskMasterPath, file);
+                const fileExists = await safeFileExists(filePath, taskMasterPath);
+                fileStatus[file] = fileExists;
+                if (file === 'tasks/tasks.json' && !fileExists) {
+                    hasEssentialFiles = false;
+                }
             } catch (error) {
                 fileStatus[file] = false;
                 if (file === 'tasks/tasks.json') {
@@ -116,8 +120,8 @@ async function detectTaskMasterFolder(projectPath) {
         let taskMetadata = null;
         if (fileStatus['tasks/tasks.json']) {
             try {
-                const tasksPath = path.join(taskMasterPath, 'tasks/tasks.json');
-                const tasksContent = await fs.readFile(tasksPath, 'utf8');
+                const tasksPath = safeJoin(taskMasterPath, 'tasks/tasks.json');
+                const tasksContent = await safeReadFile(tasksPath, taskMasterPath);
                 const tasksData = JSON.parse(tasksContent);
                 
                 // Handle both tagged and legacy formats
@@ -236,10 +240,14 @@ async function generateDisplayName(projectName, actualProjectDir = null) {
   // Use actual project directory if provided, otherwise decode from project name
   let projectPath = actualProjectDir || projectName.replace(/-/g, '/');
   
-  // Try to read package.json from the project path
+  // SECURITY FIX: Safely construct and validate package.json path
   try {
-    const packageJsonPath = path.join(projectPath, 'package.json');
-    const packageData = await fs.readFile(packageJsonPath, 'utf8');
+    // Validate the project path first
+    const validatedProjectPath = validateAndSanitizePath(projectPath);
+    const packageJsonPath = safeJoin(validatedProjectPath, 'package.json');
+    
+    // Use secure file reading
+    const packageData = await safeReadFile(packageJsonPath);
     const packageJson = JSON.parse(packageData);
     
     // Return the name from package.json if it exists
@@ -838,11 +846,20 @@ async function deleteProject(projectName) {
 
 // Add a project manually to the config (without creating folders)
 async function addProjectManually(projectPath, displayName = null) {
-  const absolutePath = path.resolve(projectPath);
+  // SECURITY FIX: Validate the project path to prevent path traversal
+  let absolutePath;
+  try {
+    absolutePath = validateAndSanitizePath(path.resolve(projectPath));
+  } catch (securityError) {
+    throw new Error(`Invalid project path: ${securityError.message}`);
+  }
   
   try {
-    // Check if the path exists
-    await fs.access(absolutePath);
+    // Check if the path exists using secure function
+    const pathExists = await safeFileExists(absolutePath);
+    if (!pathExists) {
+      throw new Error(`Path does not exist: ${absolutePath}`);
+    }
   } catch (error) {
     throw new Error(`Path does not exist: ${absolutePath}`);
   }
