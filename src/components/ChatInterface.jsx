@@ -1491,6 +1491,22 @@ function ChatInterface({
   const streamBufferRef = useRef('');
   const streamTimerRef = useRef(null);
   const [debouncedInput, setDebouncedInput] = useState('');
+  
+  // CRITICAL FIX: Cache sessionStorage to avoid blocking main thread
+  const [cachedSessionId, setCachedSessionId] = useState(() => {
+    try {
+      return sessionStorage.getItem('cursorSessionId');
+    } catch (e) {
+      return null;
+    }
+  });
+  const [cachedPendingSessionId, setCachedPendingSessionId] = useState(() => {
+    try {
+      return sessionStorage.getItem('pendingSessionId');
+    } catch (e) {
+      return null;
+    }
+  });
   const [showFileDropdown, setShowFileDropdown] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [filteredFiles, setFilteredFiles] = useState([]);
@@ -2165,7 +2181,7 @@ function ChatInterface({
         if (provider === 'cursor') {
           // For Cursor, set the session ID for resuming
           setCurrentSessionId(selectedSession.id);
-          sessionStorage.setItem('cursorSessionId', selectedSession.id);
+          setCachedSessionId(selectedSession.id);
 
           // Only load messages from SQLite if this is NOT a system-initiated session change
           // For system-initiated changes, preserve existing messages
@@ -2210,7 +2226,7 @@ function ChatInterface({
           setSessionMessages([]);
         }
         setCurrentSessionId(null);
-        sessionStorage.removeItem('cursorSessionId');
+        setCachedSessionId(null);
         setMessagesOffset(0);
         setHasMoreMessages(false);
         setTotalMessages(0);
@@ -2280,7 +2296,7 @@ function ChatInterface({
           // New session created by Claude CLI - we receive the real session ID here
           // Store it temporarily until conversation completes (prevents premature session association)
           if (latestMessage.sessionId && !currentSessionId) {
-            sessionStorage.setItem('pendingSessionId', latestMessage.sessionId);
+            setCachedPendingSessionId(latestMessage.sessionId);
 
             // Session Protection: Replace temporary "new-session-*" identifier with real session ID
             // This maintains protection continuity - no gap between temp ID and real ID
@@ -2660,7 +2676,7 @@ function ChatInterface({
           }
 
           // Mark session as inactive
-          const cursorSessionId = currentSessionId || sessionStorage.getItem('pendingSessionId');
+          const cursorSessionId = currentSessionId || cachedPendingSessionId;
           if (cursorSessionId && onSessionInactive) {
             onSessionInactive(cursorSessionId);
           }
@@ -2668,7 +2684,7 @@ function ChatInterface({
           // Store session ID for future use and trigger refresh
           if (cursorSessionId && !currentSessionId) {
             setCurrentSessionId(cursorSessionId);
-            sessionStorage.removeItem('pendingSessionId');
+            setCachedPendingSessionId(null);
 
             // Trigger a project refresh to update the sidebar with the new session
             if (window.refreshProjects) {
@@ -2724,16 +2740,16 @@ function ChatInterface({
           // Session Protection: Mark session as inactive to re-enable automatic project updates
           // Conversation is complete, safe to allow project updates again
           // Use real session ID if available, otherwise use pending session ID
-          const activeSessionId = currentSessionId || sessionStorage.getItem('pendingSessionId');
+          const activeSessionId = currentSessionId || cachedPendingSessionId;
           if (activeSessionId && onSessionInactive) {
             onSessionInactive(activeSessionId);
           }
 
           // If we have a pending session ID and the conversation completed successfully, use it
-          const pendingSessionId = sessionStorage.getItem('pendingSessionId');
+          const pendingSessionId = cachedPendingSessionId;
           if (pendingSessionId && !currentSessionId && latestMessage.exitCode === 0) {
             setCurrentSessionId(pendingSessionId);
-            sessionStorage.removeItem('pendingSessionId');
+            setCachedPendingSessionId(null);
 
             // Trigger a project refresh to update the sidebar with the new session
             if (window.refreshProjects) {
@@ -2807,7 +2823,36 @@ function ChatInterface({
           break;
       }
     }
+
+    // CRITICAL FIX: Cleanup streaming timer to prevent memory leaks
+    return () => {
+      if (streamTimerRef.current) {
+        clearTimeout(streamTimerRef.current);
+        streamTimerRef.current = null;
+      }
+    };
   }, [messages]);
+
+  // CRITICAL FIX: Keep sessionStorage cache in sync asynchronously
+  useEffect(() => {
+    if (cachedSessionId) {
+      try {
+        sessionStorage.setItem('cursorSessionId', cachedSessionId);
+      } catch (e) {
+        console.warn('Failed to update cursorSessionId:', e);
+      }
+    }
+  }, [cachedSessionId]);
+
+  useEffect(() => {
+    if (cachedPendingSessionId) {
+      try {
+        sessionStorage.setItem('pendingSessionId', cachedPendingSessionId);
+      } catch (e) {
+        console.warn('Failed to update pendingSessionId:', e);
+      }
+    }
+  }, [cachedPendingSessionId]);
 
   // Load file list when project changes
   useEffect(() => {
@@ -3141,9 +3186,8 @@ function ChatInterface({
     setIsUserScrolledUp(false); // Reset scroll state so auto-scroll works for Claude's response
     setTimeout(() => scrollToBottom(), 100); // Longer delay to ensure message is rendered
 
-    // Determine effective session id for replies to avoid race on state updates
-    const effectiveSessionId =
-      currentSessionId || selectedSession?.id || sessionStorage.getItem('cursorSessionId');
+    // CRITICAL FIX: Determine effective session id using cached storage to avoid race conditions
+    const effectiveSessionId = currentSessionId || selectedSession?.id || cachedSessionId;
 
     // Session Protection: Mark session as active to prevent automatic project updates during conversation
     // Use existing session if available; otherwise a temporary placeholder until backend provides real ID
