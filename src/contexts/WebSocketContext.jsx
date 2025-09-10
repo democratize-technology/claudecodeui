@@ -1,12 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { useWebSocket } from '../utils/websocket';
 
-const WebSocketContext = createContext({
-  ws: null,
-  sendMessage: () => {},
-  messages: [],
-  isConnected: false
-});
+const WebSocketContext = createContext(null);
 
 export const useWebSocketContext = () => {
   const context = useContext(WebSocketContext);
@@ -18,12 +13,8 @@ export const useWebSocketContext = () => {
 
 export const WebSocketProvider = ({ children }) => {
   const webSocketData = useWebSocket();
-  
-  return (
-    <WebSocketContext.Provider value={webSocketData}>
-      {children}
-    </WebSocketContext.Provider>
-  );
+
+  return <WebSocketContext.Provider value={webSocketData}>{children}</WebSocketContext.Provider>;
 };
 
 export default WebSocketContext;

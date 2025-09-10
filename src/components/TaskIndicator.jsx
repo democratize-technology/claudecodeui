@@ -4,15 +4,15 @@ import { cn } from '../lib/utils';
 
 /**
  * TaskIndicator Component
- * 
+ *
  * Displays TaskMaster status for projects in the sidebar with appropriate
  * icons and colors based on the project's TaskMaster configuration state.
  */
-const TaskIndicator = ({ 
-  status = 'not-configured', 
+const TaskIndicator = ({
+  status = 'not-configured',
   size = 'sm',
   className = '',
-  showLabel = false 
+  showLabel = false
 }) => {
   const getIndicatorConfig = () => {
     switch (status) {
@@ -24,7 +24,7 @@ const TaskIndicator = ({
           label: 'TaskMaster Ready',
           title: 'TaskMaster fully configured with MCP server'
         };
-      
+
       case 'taskmaster-only':
         return {
           icon: Settings,
@@ -33,7 +33,7 @@ const TaskIndicator = ({
           label: 'TaskMaster Init',
           title: 'TaskMaster initialized, MCP server needs setup'
         };
-        
+
       case 'mcp-only':
         return {
           icon: AlertCircle,
@@ -42,7 +42,7 @@ const TaskIndicator = ({
           label: 'MCP Ready',
           title: 'MCP server configured, TaskMaster needs initialization'
         };
-      
+
       case 'not-configured':
       case 'error':
       default:
@@ -58,10 +58,10 @@ const TaskIndicator = ({
 
   const config = getIndicatorConfig();
   const Icon = config.icon;
-  
+
   const sizeClasses = {
     xs: 'w-3 h-3',
-    sm: 'w-4 h-4', 
+    sm: 'w-4 h-4',
     md: 'w-5 h-5',
     lg: 'w-6 h-6'
   };
@@ -69,13 +69,13 @@ const TaskIndicator = ({
   const paddingClasses = {
     xs: 'p-0.5',
     sm: 'p-1',
-    md: 'p-1.5', 
+    md: 'p-1.5',
     lg: 'p-2'
   };
 
   if (showLabel) {
     return (
-      <div 
+      <div
         className={cn(
           'inline-flex items-center gap-1.5 text-xs rounded-md px-2 py-1 transition-colors',
           config.bgColor,
@@ -85,7 +85,7 @@ const TaskIndicator = ({
         title={config.title}
       >
         <Icon className={sizeClasses[size]} />
-        <span className="font-medium">{config.label}</span>
+        <span className='font-medium'>{config.label}</span>
       </div>
     );
   }

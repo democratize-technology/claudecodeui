@@ -5,11 +5,11 @@ global.fetch = jest.fn();
 const localStorageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
-  clear: jest.fn(),
+  clear: jest.fn()
 };
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
-  writable: true,
+  writable: true
 });
 
 // Import after mocks are set up
@@ -33,8 +33,8 @@ describe('API utilities', () => {
       expect(localStorageMock.getItem).toHaveBeenCalledWith('auth-token');
       expect(fetch).toHaveBeenCalledWith('/test-endpoint', {
         headers: {
-          'Content-Type': 'application/json',
-        },
+          'Content-Type': 'application/json'
+        }
       });
     });
 
@@ -48,8 +48,8 @@ describe('API utilities', () => {
       expect(fetch).toHaveBeenCalledWith('/test-endpoint', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${testToken}`,
-        },
+          Authorization: `Bearer ${testToken}`
+        }
       });
     });
 
@@ -59,20 +59,20 @@ describe('API utilities', () => {
 
       await authenticatedFetch('/test-endpoint', {
         headers: {
-          'Custom-Header': 'custom-value',
+          'Custom-Header': 'custom-value'
         },
         method: 'POST',
-        body: JSON.stringify({ test: 'data' }),
+        body: JSON.stringify({ test: 'data' })
       });
 
       expect(fetch).toHaveBeenCalledWith('/test-endpoint', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-          'Custom-Header': 'custom-value',
+          Authorization: 'Bearer token',
+          'Custom-Header': 'custom-value'
         },
         method: 'POST',
-        body: JSON.stringify({ test: 'data' }),
+        body: JSON.stringify({ test: 'data' })
       });
     });
 
@@ -82,15 +82,15 @@ describe('API utilities', () => {
 
       await authenticatedFetch('/test-endpoint', {
         headers: {
-          'Content-Type': 'text/plain',
-        },
+          'Content-Type': 'text/plain'
+        }
       });
 
       expect(fetch).toHaveBeenCalledWith('/test-endpoint', {
         headers: {
           'Content-Type': 'text/plain',
-          'Authorization': 'Bearer token',
-        },
+          Authorization: 'Bearer token'
+        }
       });
     });
 
@@ -103,15 +103,15 @@ describe('API utilities', () => {
 
       await authenticatedFetch('/test-endpoint', {
         method: 'POST',
-        body: formData,
+        body: formData
       });
 
       expect(fetch).toHaveBeenCalledWith('/test-endpoint', {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': 'Bearer token',
-        },
+          Authorization: 'Bearer token'
+        }
       });
     });
   });
@@ -119,7 +119,7 @@ describe('API utilities', () => {
   describe('api.auth', () => {
     beforeEach(() => {
       fetch.mockResolvedValue({
-        json: () => Promise.resolve({ success: true }),
+        json: () => Promise.resolve({ success: true })
       });
     });
 
@@ -133,7 +133,7 @@ describe('API utilities', () => {
       expect(fetch).toHaveBeenCalledWith('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'testuser', password: 'testpass' }),
+        body: JSON.stringify({ username: 'testuser', password: 'testpass' })
       });
     });
 
@@ -142,7 +142,7 @@ describe('API utilities', () => {
       expect(fetch).toHaveBeenCalledWith('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'testuser', password: 'testpass' }),
+        body: JSON.stringify({ username: 'testuser', password: 'testpass' })
       });
     });
   });
@@ -151,40 +151,43 @@ describe('API utilities', () => {
     beforeEach(() => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
-        json: () => Promise.resolve({ messages: [] }),
+        json: () => Promise.resolve({ messages: [] })
       });
     });
 
     it('should build URL without query params when limit is null', async () => {
       await api.sessionMessages('project1', 'session1', null, 0);
-      
+
       expect(fetch).toHaveBeenCalledWith('/api/projects/project1/sessions/session1/messages', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
+          Authorization: 'Bearer token'
+        }
       });
     });
 
     it('should build URL with query params when limit is provided', async () => {
       await api.sessionMessages('project1', 'session1', 10, 5);
-      
-      expect(fetch).toHaveBeenCalledWith('/api/projects/project1/sessions/session1/messages?limit=10&offset=5', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
-      });
+
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/projects/project1/sessions/session1/messages?limit=10&offset=5',
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer token'
+          }
+        }
+      );
     });
 
     it('should handle default parameters', async () => {
       await api.sessionMessages('project1', 'session1');
-      
+
       expect(fetch).toHaveBeenCalledWith('/api/projects/project1/sessions/session1/messages', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
+          Authorization: 'Bearer token'
+        }
       });
     });
   });
@@ -193,7 +196,7 @@ describe('API utilities', () => {
     it('should handle FormData correctly by not setting Content-Type', async () => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
-        json: () => Promise.resolve({ transcription: 'test' }),
+        json: () => Promise.resolve({ transcription: 'test' })
       });
 
       const formData = new FormData();
@@ -207,8 +210,8 @@ describe('API utilities', () => {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': 'Bearer token',
-        },
+          Authorization: 'Bearer token'
+        }
       });
     });
   });
@@ -217,19 +220,19 @@ describe('API utilities', () => {
     beforeEach(() => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
-        json: () => Promise.resolve({ success: true }),
+        json: () => Promise.resolve({ success: true })
       });
     });
 
     it('should initialize TaskMaster for a project', async () => {
       await api.taskmaster.init('myproject');
-      
+
       expect(fetch).toHaveBeenCalledWith('/api/taskmaster/init/myproject', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
+          Authorization: 'Bearer token'
+        }
       });
     });
 
@@ -239,18 +242,18 @@ describe('API utilities', () => {
         title: 'Test Title',
         description: 'Test Description',
         priority: 'high',
-        dependencies: ['task1', 'task2'],
+        dependencies: ['task1', 'task2']
       };
 
       await api.taskmaster.addTask('myproject', taskData);
-      
+
       expect(fetch).toHaveBeenCalledWith('/api/taskmaster/add-task/myproject', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
+          Authorization: 'Bearer token'
         },
-        body: JSON.stringify(taskData),
+        body: JSON.stringify(taskData)
       });
     });
 
@@ -258,18 +261,18 @@ describe('API utilities', () => {
       const prdData = {
         fileName: 'requirements.md',
         numTasks: 5,
-        append: true,
+        append: true
       };
 
       await api.taskmaster.parsePRD('myproject', prdData);
-      
+
       expect(fetch).toHaveBeenCalledWith('/api/taskmaster/parse-prd/myproject', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
+          Authorization: 'Bearer token'
         },
-        body: JSON.stringify(prdData),
+        body: JSON.stringify(prdData)
       });
     });
   });
@@ -278,16 +281,16 @@ describe('API utilities', () => {
     it('should prepend /api to endpoint', async () => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
-        json: () => Promise.resolve({ data: 'test' }),
+        json: () => Promise.resolve({ data: 'test' })
       });
 
       await api.get('/custom/endpoint');
-      
+
       expect(fetch).toHaveBeenCalledWith('/api/custom/endpoint', {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer token',
-        },
+          Authorization: 'Bearer token'
+        }
       });
     });
   });
@@ -296,22 +299,22 @@ describe('API utilities', () => {
     beforeEach(() => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
-        json: () => Promise.resolve({ content: 'test' }),
+        json: () => Promise.resolve({ content: 'test' })
       });
     });
 
     it('should properly encode file paths in readFile', async () => {
       const filePath = 'src/components/Some File With Spaces.jsx';
       await api.readFile('myproject', filePath);
-      
+
       const expectedEncodedPath = encodeURIComponent(filePath);
       expect(fetch).toHaveBeenCalledWith(
         `/api/projects/myproject/file?filePath=${expectedEncodedPath}`,
         {
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer token',
-          },
+            Authorization: 'Bearer token'
+          }
         }
       );
     });

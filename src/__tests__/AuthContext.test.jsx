@@ -11,9 +11,9 @@ jest.mock('../utils/api', () => ({
       user: jest.fn(),
       login: jest.fn(),
       register: jest.fn(),
-      logout: jest.fn(),
-    },
-  },
+      logout: jest.fn()
+    }
+  }
 }));
 
 // Mock localStorage
@@ -21,40 +21,31 @@ const localStorageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
   removeItem: jest.fn(),
-  clear: jest.fn(),
+  clear: jest.fn()
 };
 Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
-  writable: true,
+  writable: true
 });
 
 // Test component to access the auth context
 const TestComponent = () => {
-  const {
-    user,
-    token,
-    login,
-    register,
-    logout,
-    isLoading,
-    needsSetup,
-    error,
-  } = useAuth();
+  const { user, token, login, register, logout, isLoading, needsSetup, error } = useAuth();
 
   return (
     <div>
-      <div data-testid="user">{user ? JSON.stringify(user) : 'null'}</div>
-      <div data-testid="token">{token || 'null'}</div>
-      <div data-testid="isLoading">{isLoading.toString()}</div>
-      <div data-testid="needsSetup">{needsSetup.toString()}</div>
-      <div data-testid="error">{error || 'null'}</div>
-      <button onClick={() => login('testuser', 'testpass')} data-testid="login-btn">
+      <div data-testid='user'>{user ? JSON.stringify(user) : 'null'}</div>
+      <div data-testid='token'>{token || 'null'}</div>
+      <div data-testid='isLoading'>{isLoading.toString()}</div>
+      <div data-testid='needsSetup'>{needsSetup.toString()}</div>
+      <div data-testid='error'>{error || 'null'}</div>
+      <button onClick={() => login('testuser', 'testpass')} data-testid='login-btn'>
         Login
       </button>
-      <button onClick={() => register('testuser', 'testpass')} data-testid="register-btn">
+      <button onClick={() => register('testuser', 'testpass')} data-testid='register-btn'>
         Register
       </button>
-      <button onClick={logout} data-testid="logout-btn">
+      <button onClick={logout} data-testid='logout-btn'>
         Logout
       </button>
     </div>
@@ -62,11 +53,7 @@ const TestComponent = () => {
 };
 
 const renderWithProvider = (component) => {
-  return render(
-    <AuthProvider>
-      {component}
-    </AuthProvider>
-  );
+  return render(<AuthProvider>{component}</AuthProvider>);
 };
 
 describe('AuthContext', () => {
@@ -75,7 +62,7 @@ describe('AuthContext', () => {
     localStorageMock.getItem.mockClear();
     localStorageMock.setItem.mockClear();
     localStorageMock.removeItem.mockClear();
-    
+
     // Suppress console.error during tests
     jest.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -96,7 +83,7 @@ describe('AuthContext', () => {
     it('should initialize with loading state and check auth status', async () => {
       localStorageMock.getItem.mockReturnValue(null);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: false }),
+        json: () => Promise.resolve({ needsSetup: false })
       });
 
       renderWithProvider(<TestComponent />);
@@ -116,7 +103,7 @@ describe('AuthContext', () => {
     it('should detect when system needs setup', async () => {
       localStorageMock.getItem.mockReturnValue(null);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: true }),
+        json: () => Promise.resolve({ needsSetup: true })
       });
 
       renderWithProvider(<TestComponent />);
@@ -133,11 +120,11 @@ describe('AuthContext', () => {
 
       localStorageMock.getItem.mockReturnValue(mockToken);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: false }),
+        json: () => Promise.resolve({ needsSetup: false })
       });
       api.auth.user.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ user: mockUser }),
+        json: () => Promise.resolve({ user: mockUser })
       });
 
       renderWithProvider(<TestComponent />);
@@ -156,10 +143,10 @@ describe('AuthContext', () => {
 
       localStorageMock.getItem.mockReturnValue(invalidToken);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: false }),
+        json: () => Promise.resolve({ needsSetup: false })
       });
       api.auth.user.mockResolvedValue({
-        ok: false,
+        ok: false
       });
 
       renderWithProvider(<TestComponent />);
@@ -180,7 +167,9 @@ describe('AuthContext', () => {
       renderWithProvider(<TestComponent />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('error')).toHaveTextContent('Failed to check authentication status');
+        expect(screen.getByTestId('error')).toHaveTextContent(
+          'Failed to check authentication status'
+        );
         expect(screen.getByTestId('isLoading')).toHaveTextContent('false');
       });
     });
@@ -193,11 +182,11 @@ describe('AuthContext', () => {
 
       localStorageMock.getItem.mockReturnValue(null);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: false }),
+        json: () => Promise.resolve({ needsSetup: false })
       });
       api.auth.login.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ token: mockToken, user: mockUser }),
+        json: () => Promise.resolve({ token: mockToken, user: mockUser })
       });
 
       renderWithProvider(<TestComponent />);
@@ -222,11 +211,11 @@ describe('AuthContext', () => {
     it('should handle login failure', async () => {
       localStorageMock.getItem.mockReturnValue(null);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: false }),
+        json: () => Promise.resolve({ needsSetup: false })
       });
       api.auth.login.mockResolvedValue({
         ok: false,
-        json: () => Promise.resolve({ error: 'Invalid credentials' }),
+        json: () => Promise.resolve({ error: 'Invalid credentials' })
       });
 
       renderWithProvider(<TestComponent />);
@@ -248,7 +237,7 @@ describe('AuthContext', () => {
     it('should handle login network error', async () => {
       localStorageMock.getItem.mockReturnValue(null);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: false }),
+        json: () => Promise.resolve({ needsSetup: false })
       });
       api.auth.login.mockRejectedValue(new Error('Network error'));
 
@@ -275,11 +264,11 @@ describe('AuthContext', () => {
 
       localStorageMock.getItem.mockReturnValue(null);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: true }),
+        json: () => Promise.resolve({ needsSetup: true })
       });
       api.auth.register.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ token: mockToken, user: mockUser }),
+        json: () => Promise.resolve({ token: mockToken, user: mockUser })
       });
 
       renderWithProvider(<TestComponent />);
@@ -304,11 +293,11 @@ describe('AuthContext', () => {
     it('should handle registration failure', async () => {
       localStorageMock.getItem.mockReturnValue(null);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: true }),
+        json: () => Promise.resolve({ needsSetup: true })
       });
       api.auth.register.mockResolvedValue({
         ok: false,
-        json: () => Promise.resolve({ error: 'Username already exists' }),
+        json: () => Promise.resolve({ error: 'Username already exists' })
       });
 
       renderWithProvider(<TestComponent />);
@@ -334,11 +323,11 @@ describe('AuthContext', () => {
 
       localStorageMock.getItem.mockReturnValue(mockToken);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: false }),
+        json: () => Promise.resolve({ needsSetup: false })
       });
       api.auth.user.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ user: mockUser }),
+        json: () => Promise.resolve({ user: mockUser })
       });
       api.auth.logout.mockResolvedValue({});
 
@@ -362,7 +351,7 @@ describe('AuthContext', () => {
     it('should handle logout without token', async () => {
       localStorageMock.getItem.mockReturnValue(null);
       api.auth.status.mockResolvedValue({
-        json: () => Promise.resolve({ needsSetup: false }),
+        json: () => Promise.resolve({ needsSetup: false })
       });
 
       renderWithProvider(<TestComponent />);

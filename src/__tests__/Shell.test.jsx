@@ -14,6 +14,8 @@ jest.mock('xterm', () => ({
     onResize: jest.fn(),
     focus: jest.fn(),
     loadAddon: jest.fn(),
+    attachCustomKeyEventHandler: jest.fn(),
+    hasSelection: jest.fn(() => false),
     cols: 80,
     rows: 24,
     element: { parentNode: { removeChild: jest.fn() } }
@@ -103,9 +105,9 @@ describe('Shell Component Security Tests', () => {
   describe('Authentication Security', () => {
     test('should require authentication token for WebSocket connection', async () => {
       mockLocalStorage.getItem.mockReturnValue(null);
-      
+
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Try to connect (this would be triggered by user interaction)
       // The component should not attempt WebSocket connection without token
       await waitFor(() => {
@@ -116,13 +118,13 @@ describe('Shell Component Security Tests', () => {
     test('should include authentication token in WebSocket URL', async () => {
       const token = 'secure-token-456';
       mockLocalStorage.getItem.mockReturnValue(token);
-      
+
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Simulate component initialization and connection
       await act(async () => {
         // Component will try to connect on initialization
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       });
 
       // Verify WebSocket is created with token in URL
@@ -135,17 +137,17 @@ describe('Shell Component Security Tests', () => {
 
     test('should handle authentication failure gracefully', async () => {
       fetch.mockRejectedValue(new Error('Authentication failed'));
-      
+
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith(
           expect.stringContaining('Failed to get server configuration')
         );
       });
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -154,12 +156,12 @@ describe('Shell Component Security Tests', () => {
     test('should sanitize clipboard input before sending to terminal', async () => {
       const maliciousInput = '; rm -rf / #';
       navigator.clipboard.readText.mockResolvedValue(maliciousInput);
-      
+
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Simulate Ctrl+V paste
       const container = document.body;
-      
+
       await act(async () => {
         fireEvent.keyDown(container, {
           key: 'v',
@@ -182,15 +184,15 @@ describe('Shell Component Security Tests', () => {
 
     test('should properly structure terminal input messages', async () => {
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Mock terminal onData callback and trigger it
       const { Terminal } = require('xterm');
       const terminalInstance = Terminal.mock.results[0].value;
       const onDataCallback = terminalInstance.onData.mock.calls[0][0];
-      
+
       // Simulate user typing potentially dangerous command
       const dangerousCommand = 'sudo rm -rf /';
-      
+
       await act(async () => {
         onDataCallback(dangerousCommand);
       });
@@ -207,7 +209,7 @@ describe('Shell Component Security Tests', () => {
   describe('WebSocket Security', () => {
     test('should validate WebSocket message structure', async () => {
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Simulate WebSocket connection
       await act(async () => {
         if (mockWebSocket.onopen) {
@@ -217,7 +219,7 @@ describe('Shell Component Security Tests', () => {
 
       // Simulate malformed message from server
       const malformedMessage = { invalid: 'structure' };
-      
+
       await act(async () => {
         if (mockWebSocket.onmessage) {
           mockWebSocket.onmessage({
@@ -234,9 +236,9 @@ describe('Shell Component Security Tests', () => {
 
     test('should handle WebSocket connection errors', async () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Simulate WebSocket error
       await act(async () => {
         if (mockWebSocket.onerror) {
@@ -252,7 +254,7 @@ describe('Shell Component Security Tests', () => {
       const { unmount } = render(
         <Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />
       );
-      
+
       // Simulate connection
       await act(async () => {
         if (mockWebSocket.onopen) {
@@ -272,16 +274,14 @@ describe('Shell Component Security Tests', () => {
     test('should isolate sessions between different projects', async () => {
       const project1 = { name: 'project1', fullPath: '/path/to/project1' };
       const project2 = { name: 'project2', fullPath: '/path/to/project2' };
-      
+
       // Render first project
       const { rerender } = render(
         <Shell selectedProject={project1} selectedSession={mockSession} isActive={true} />
       );
-      
+
       // Switch to second project
-      rerender(
-        <Shell selectedProject={project2} selectedSession={mockSession} isActive={true} />
-      );
+      rerender(<Shell selectedProject={project2} selectedSession={mockSession} isActive={true} />);
 
       // Verify that session is properly isolated
       await waitFor(() => {
@@ -291,11 +291,11 @@ describe('Shell Component Security Tests', () => {
 
     test('should clear sensitive data on session restart', async () => {
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Get terminal instance
       const { Terminal } = require('xterm');
       const terminalInstance = Terminal.mock.results[0].value;
-      
+
       // Simulate restart (this would be triggered by user action)
       // The component should clear terminal and dispose resources
       await act(async () => {
@@ -312,14 +312,14 @@ describe('Shell Component Security Tests', () => {
   describe('Input Validation', () => {
     test('should handle resize messages properly', async () => {
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       const { Terminal } = require('xterm');
       const terminalInstance = Terminal.mock.results[0].value;
-      
+
       // Mock terminal dimensions
       terminalInstance.cols = 100;
       terminalInstance.rows = 30;
-      
+
       // Simulate resize
       const onResizeCallback = terminalInstance.onResize.mock.calls[0]?.[0];
       if (onResizeCallback) {
@@ -342,15 +342,15 @@ describe('Shell Component Security Tests', () => {
         name: 'test',
         fullPath: '../../../etc/passwd'
       };
-      
+
       render(
-        <Shell 
-          selectedProject={projectWithSuspiciousPath} 
-          selectedSession={mockSession} 
-          isActive={true} 
+        <Shell
+          selectedProject={projectWithSuspiciousPath}
+          selectedSession={mockSession}
+          isActive={true}
         />
       );
-      
+
       await act(async () => {
         if (mockWebSocket.onopen) {
           mockWebSocket.onopen();
@@ -369,9 +369,9 @@ describe('Shell Component Security Tests', () => {
   describe('Error Handling', () => {
     test('should handle JSON parsing errors in WebSocket messages', async () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Simulate invalid JSON from server
       await act(async () => {
         if (mockWebSocket.onmessage) {
@@ -388,11 +388,11 @@ describe('Shell Component Security Tests', () => {
 
     test('should handle clipboard read failures', async () => {
       navigator.clipboard.readText.mockRejectedValue(new Error('Clipboard access denied'));
-      
+
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
-      
+
       // Simulate Ctrl+V paste
       const container = document.body;
       await act(async () => {
@@ -407,7 +407,7 @@ describe('Shell Component Security Tests', () => {
           expect.stringContaining('Failed to read from clipboard')
         );
       });
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -417,10 +417,10 @@ describe('Shell Component Security Tests', () => {
       const { unmount } = render(
         <Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />
       );
-      
+
       const { Terminal } = require('xterm');
       const terminalInstance = Terminal.mock.results[0].value;
-      
+
       unmount();
 
       // Verify cleanup
@@ -432,14 +432,18 @@ describe('Shell Component Security Tests', () => {
       const { rerender } = render(
         <Shell selectedProject={mockProject} selectedSession={{ id: 'session1' }} isActive={true} />
       );
-      
+
       // Rapidly change sessions
       for (let i = 2; i <= 5; i++) {
         rerender(
-          <Shell selectedProject={mockProject} selectedSession={{ id: `session${i}` }} isActive={true} />
+          <Shell
+            selectedProject={mockProject}
+            selectedSession={{ id: `session${i}` }}
+            isActive={true}
+          />
         );
         await act(async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         });
       }
 

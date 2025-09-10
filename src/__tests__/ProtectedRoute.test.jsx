@@ -5,25 +5,23 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 
 // Mock the auth context
 jest.mock('../contexts/AuthContext.jsx', () => ({
-  useAuth: jest.fn(),
+  useAuth: jest.fn()
 }));
 
 // Mock the form components
 jest.mock('../components/SetupForm', () => {
   return function MockSetupForm() {
-    return <div data-testid="setup-form">Setup Form</div>;
+    return <div data-testid='setup-form'>Setup Form</div>;
   };
 });
 
 jest.mock('../components/LoginForm', () => {
   return function MockLoginForm() {
-    return <div data-testid="login-form">Login Form</div>;
+    return <div data-testid='login-form'>Login Form</div>;
   };
 });
 
-const TestContent = () => (
-  <div data-testid="protected-content">Protected Content</div>
-);
+const TestContent = () => <div data-testid='protected-content'>Protected Content</div>;
 
 describe('ProtectedRoute', () => {
   beforeEach(() => {
@@ -34,7 +32,7 @@ describe('ProtectedRoute', () => {
     useAuth.mockReturnValue({
       user: null,
       isLoading: true,
-      needsSetup: false,
+      needsSetup: false
     });
 
     render(
@@ -54,7 +52,7 @@ describe('ProtectedRoute', () => {
     useAuth.mockReturnValue({
       user: null,
       isLoading: false,
-      needsSetup: true,
+      needsSetup: true
     });
 
     render(
@@ -73,7 +71,7 @@ describe('ProtectedRoute', () => {
     useAuth.mockReturnValue({
       user: null,
       isLoading: false,
-      needsSetup: false,
+      needsSetup: false
     });
 
     render(
@@ -90,11 +88,11 @@ describe('ProtectedRoute', () => {
 
   it('should show protected content when user is authenticated', () => {
     const mockUser = { id: 1, username: 'testuser' };
-    
+
     useAuth.mockReturnValue({
       user: mockUser,
       isLoading: false,
-      needsSetup: false,
+      needsSetup: false
     });
 
     render(
@@ -111,17 +109,17 @@ describe('ProtectedRoute', () => {
 
   it('should render multiple children when user is authenticated', () => {
     const mockUser = { id: 1, username: 'testuser' };
-    
+
     useAuth.mockReturnValue({
       user: mockUser,
       isLoading: false,
-      needsSetup: false,
+      needsSetup: false
     });
 
     render(
       <ProtectedRoute>
-        <div data-testid="child-1">Child 1</div>
-        <div data-testid="child-2">Child 2</div>
+        <div data-testid='child-1'>Child 1</div>
+        <div data-testid='child-2'>Child 2</div>
       </ProtectedRoute>
     );
 
@@ -134,7 +132,7 @@ describe('ProtectedRoute', () => {
       useAuth.mockReturnValue({
         user: null,
         isLoading: true,
-        needsSetup: false,
+        needsSetup: false
       });
     });
 
@@ -158,7 +156,14 @@ describe('ProtectedRoute', () => {
       );
 
       const loadingContainer = screen.getByText('Claude Code UI').closest('div.min-h-screen');
-      expect(loadingContainer).toHaveClass('min-h-screen', 'bg-background', 'flex', 'items-center', 'justify-center', 'p-4');
+      expect(loadingContainer).toHaveClass(
+        'min-h-screen',
+        'bg-background',
+        'flex',
+        'items-center',
+        'justify-center',
+        'p-4'
+      );
     });
 
     it('should display the Claude Code UI branding', () => {
@@ -169,7 +174,12 @@ describe('ProtectedRoute', () => {
       );
 
       expect(screen.getByText('Claude Code UI')).toBeInTheDocument();
-      expect(screen.getByText('Claude Code UI')).toHaveClass('text-2xl', 'font-bold', 'text-foreground', 'mb-2');
+      expect(screen.getByText('Claude Code UI')).toHaveClass(
+        'text-2xl',
+        'font-bold',
+        'text-foreground',
+        'mb-2'
+      );
     });
   });
 
@@ -178,7 +188,7 @@ describe('ProtectedRoute', () => {
       useAuth.mockReturnValue({
         user: null,
         isLoading: true,
-        needsSetup: true,
+        needsSetup: true
       });
 
       render(
@@ -195,7 +205,7 @@ describe('ProtectedRoute', () => {
       useAuth.mockReturnValue({
         user: null,
         isLoading: false,
-        needsSetup: true,
+        needsSetup: true
       });
 
       render(
@@ -210,11 +220,11 @@ describe('ProtectedRoute', () => {
 
     it('should prioritize setup over user authentication when needsSetup is true', () => {
       const mockUser = { id: 1, username: 'testuser' };
-      
+
       useAuth.mockReturnValue({
         user: mockUser,
         isLoading: false,
-        needsSetup: true, // Setup takes priority over user presence
+        needsSetup: true // Setup takes priority over user presence
       });
 
       render(
@@ -233,7 +243,7 @@ describe('ProtectedRoute', () => {
       useAuth.mockReturnValue({
         user: undefined,
         isLoading: false,
-        needsSetup: false,
+        needsSetup: false
       });
 
       render(
@@ -249,7 +259,7 @@ describe('ProtectedRoute', () => {
       useAuth.mockReturnValue({
         user: {}, // Empty but truthy object
         isLoading: false,
-        needsSetup: false,
+        needsSetup: false
       });
 
       render(
@@ -263,15 +273,15 @@ describe('ProtectedRoute', () => {
 
     it('should render without children', () => {
       const mockUser = { id: 1, username: 'testuser' };
-      
+
       useAuth.mockReturnValue({
         user: mockUser,
         isLoading: false,
-        needsSetup: false,
+        needsSetup: false
       });
 
       const { container } = render(<ProtectedRoute />);
-      
+
       // Should render without error, but with no children (undefined is returned)
       expect(container.firstChild).toBeNull();
     });

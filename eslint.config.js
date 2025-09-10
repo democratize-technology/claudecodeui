@@ -9,7 +9,7 @@ import prettierConfig from 'eslint-config-prettier';
 export default [
   // Base ESLint recommended rules
   js.configs.recommended,
-  
+
   // Configuration for JavaScript and JSX files
   {
     files: ['**/*.{js,jsx}'],
@@ -18,8 +18,8 @@ export default [
       sourceType: 'module',
       parserOptions: {
         ecmaFeatures: {
-          jsx: true,
-        },
+          jsx: true
+        }
       },
       globals: {
         // Browser globals
@@ -31,12 +31,26 @@ export default [
         sessionStorage: 'readonly',
         fetch: 'readonly',
         WebSocket: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
+        FormData: 'readonly',
+        MediaRecorder: 'readonly',
+        File: 'readonly',
+        Blob: 'readonly',
+        alert: 'readonly',
         // Node globals for server files
         process: 'readonly',
         Buffer: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',
         global: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
         // Jest globals
         jest: 'readonly',
         describe: 'readonly',
@@ -46,20 +60,20 @@ export default [
         beforeEach: 'readonly',
         afterEach: 'readonly',
         beforeAll: 'readonly',
-        afterAll: 'readonly',
-      },
+        afterAll: 'readonly'
+      }
     },
     plugins: {
       react: reactPlugin,
       'react-hooks': reactHooksPlugin,
       'jsx-a11y': jsxA11yPlugin,
       import: importPlugin,
-      prettier: prettierPlugin,
+      prettier: prettierPlugin
     },
     rules: {
       // Prettier integration
       'prettier/prettier': 'error',
-      
+
       // React rules
       'react/jsx-uses-react': 'error',
       'react/jsx-uses-vars': 'error',
@@ -71,11 +85,11 @@ export default [
       'react/no-unknown-property': 'error',
       'react/prop-types': 'off', // We're not using prop-types in this project
       'react/react-in-jsx-scope': 'off', // Not needed with React 17+
-      
+
       // React Hooks rules
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-      
+
       // Accessibility rules (important for inclusive design)
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/anchor-has-content': 'error',
@@ -85,19 +99,22 @@ export default [
       'jsx-a11y/click-events-have-key-events': 'warn',
       'jsx-a11y/heading-has-content': 'error',
       'jsx-a11y/no-redundant-roles': 'warn',
-      
+
       // Import/Export rules
       'import/no-unresolved': 'off', // Vite handles this
       'import/named': 'error',
       'import/default': 'error',
       'import/no-unused-modules': 'off', // Can be resource intensive
-      
+
       // General JavaScript rules
-      'no-unused-vars': ['error', { 
-        argsIgnorePattern: '^_',
-        varsIgnorePattern: '^_',
-        caughtErrorsIgnorePattern: '^_'
-      }],
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_'
+        }
+      ],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-debugger': 'error',
       'no-alert': 'warn',
@@ -105,43 +122,43 @@ export default [
       'prefer-const': 'error',
       'prefer-template': 'warn',
       'no-duplicate-imports': 'error',
-      
+
       // Security rules
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
       'no-script-url': 'error',
-      
+
       // Code quality rules
-      'eqeqeq': ['error', 'always'],
-      'curly': 'error',
+      eqeqeq: ['error', 'always'],
+      curly: 'error',
       'no-multi-spaces': 'error',
       'no-trailing-spaces': 'error',
       'comma-dangle': ['error', 'never'],
-      'semi': ['error', 'always'],
-      'quotes': ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
-      
+      semi: ['error', 'always'],
+      quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
+
       // Performance rules
       'no-loop-func': 'error',
       'no-continue': 'warn',
-      
+
       // Error handling
       'no-empty': ['error', { allowEmptyCatch: true }],
       'no-empty-function': 'warn',
-      'handle-callback-err': 'error',
+      'handle-callback-err': 'error'
     },
     settings: {
       react: {
-        version: 'detect',
+        version: 'detect'
       },
       'import/resolver': {
         node: {
-          extensions: ['.js', '.jsx'],
-        },
-      },
-    },
+          extensions: ['.js', '.jsx']
+        }
+      }
+    }
   },
-  
+
   // Server-specific configuration
   {
     files: ['server/**/*.js'],
@@ -156,22 +173,60 @@ export default [
         require: 'readonly',
         module: 'readonly',
         exports: 'readonly',
-      },
+        fs: 'readonly'
+      }
     },
     rules: {
-      'no-console': 'off', // Allow console in server code
-    },
+      'no-console': 'off' // Allow console in server code
+    }
   },
-  
+
+  // Service Worker configuration
+  {
+    files: ['**/sw.js', '**/service-worker.js', '**/serviceWorker.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        clients: 'readonly',
+        skipWaiting: 'readonly',
+        importScripts: 'readonly'
+      }
+    },
+    rules: {
+      'no-console': 'off' // Allow console in service workers
+    }
+  },
+
+  // Node.js utility files configuration
+  {
+    files: ['**/generate-*.js', 'scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly'
+      }
+    },
+    rules: {
+      'no-console': 'off' // Allow console in utility scripts
+    }
+  },
+
   // Test files configuration
   {
     files: ['**/*.test.{js,jsx}', '**/__tests__/**/*.{js,jsx}'],
     rules: {
       'no-unused-expressions': 'off',
-      'no-console': 'off', // Allow console in tests
-    },
+      'no-console': 'off' // Allow console in tests
+    }
   },
-  
+
   // Override Prettier conflicts
-  prettierConfig,
+  prettierConfig
 ];

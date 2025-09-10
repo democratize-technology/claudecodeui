@@ -7,13 +7,13 @@ const ThrowError = ({ shouldThrow, errorMessage = 'Test error', errorType = Erro
   if (shouldThrow) {
     throw new errorType(errorMessage);
   }
-  return <div data-testid="working-component">Component is working</div>;
+  return <div data-testid='working-component'>Component is working</div>;
 };
 
 // Component that throws different types of errors
 const SecurityThrowError = ({ errorType, shouldThrow }) => {
   if (!shouldThrow) return <div>Safe component</div>;
-  
+
   switch (errorType) {
     case 'xss':
       throw new Error('<script>alert("XSS")</script>');
@@ -53,20 +53,22 @@ describe('ErrorBoundary Security Tests', () => {
     test('should catch and handle JavaScript errors safely', () => {
       render(
         <ErrorBoundary>
-          <ThrowError shouldThrow={true} errorMessage="Test JavaScript error" />
+          <ThrowError shouldThrow={true} errorMessage='Test JavaScript error' />
         </ErrorBoundary>
       );
 
       // Should show error UI instead of crashing
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      expect(screen.getByText('An error occurred while loading the chat interface.')).toBeInTheDocument();
+      expect(
+        screen.getByText('An error occurred while loading the chat interface.')
+      ).toBeInTheDocument();
       expect(screen.getByText('Try Again')).toBeInTheDocument();
     });
 
     test('should prevent XSS attacks through error messages', () => {
       render(
         <ErrorBoundary showDetails={true}>
-          <SecurityThrowError errorType="xss" shouldThrow={true} />
+          <SecurityThrowError errorType='xss' shouldThrow={true} />
         </ErrorBoundary>
       );
 
@@ -76,7 +78,7 @@ describe('ErrorBoundary Security Tests', () => {
 
       // The error message should be displayed as text, not executed as HTML
       expect(screen.getByText(/script.*alert.*XSS/)).toBeInTheDocument();
-      
+
       // Verify no script execution (would require more complex testing in real scenarios)
       const errorContainer = screen.getByRole('group'); // details element
       expect(errorContainer).not.toContainHTML('<script>');
@@ -85,7 +87,7 @@ describe('ErrorBoundary Security Tests', () => {
     test('should sanitize sensitive data in error messages', () => {
       render(
         <ErrorBoundary showDetails={true}>
-          <SecurityThrowError errorType="sensitive-data" shouldThrow={true} />
+          <SecurityThrowError errorType='sensitive-data' shouldThrow={true} />
         </ErrorBoundary>
       );
 
@@ -95,7 +97,7 @@ describe('ErrorBoundary Security Tests', () => {
       // Should display error message (ideally, sensitive data should be redacted by the error boundary)
       const errorText = screen.getByText(/API_KEY.*PASSWORD/);
       expect(errorText).toBeInTheDocument();
-      
+
       // Note: In production, sensitive data should be redacted before display
       // This test documents current behavior and highlights improvement needed
     });
@@ -103,12 +105,12 @@ describe('ErrorBoundary Security Tests', () => {
     test('should handle path traversal attempts in error messages', () => {
       render(
         <ErrorBoundary showDetails={true}>
-          <SecurityThrowError errorType="path-traversal" shouldThrow={true} />
+          <SecurityThrowError errorType='path-traversal' shouldThrow={true} />
         </ErrorBoundary>
       );
 
       fireEvent.click(screen.getByText('Error Details'));
-      
+
       // Should display the path traversal attempt as harmless text
       expect(screen.getByText(/\.\..*etc.*passwd/)).toBeInTheDocument();
     });
@@ -116,12 +118,12 @@ describe('ErrorBoundary Security Tests', () => {
     test('should handle SQL injection attempts in error messages', () => {
       render(
         <ErrorBoundary showDetails={true}>
-          <SecurityThrowError errorType="sql-injection" shouldThrow={true} />
+          <SecurityThrowError errorType='sql-injection' shouldThrow={true} />
         </ErrorBoundary>
       );
 
       fireEvent.click(screen.getByText('Error Details'));
-      
+
       // Should display SQL injection as harmless text
       expect(screen.getByText(/DROP TABLE users/)).toBeInTheDocument();
     });
@@ -129,12 +131,12 @@ describe('ErrorBoundary Security Tests', () => {
     test('should handle command injection attempts in error messages', () => {
       render(
         <ErrorBoundary showDetails={true}>
-          <SecurityThrowError errorType="command-injection" shouldThrow={true} />
+          <SecurityThrowError errorType='command-injection' shouldThrow={true} />
         </ErrorBoundary>
       );
 
       fireEvent.click(screen.getByText('Error Details'));
-      
+
       // Should display command injection as harmless text
       expect(screen.getByText(/\$\(rm -rf/)).toBeInTheDocument();
     });
@@ -176,7 +178,7 @@ describe('ErrorBoundary Security Tests', () => {
       // First error
       const { rerender, unmount } = render(
         <ErrorBoundary showDetails={true}>
-          <SecurityThrowError errorType="xss" shouldThrow={true} />
+          <SecurityThrowError errorType='xss' shouldThrow={true} />
         </ErrorBoundary>
       );
 
@@ -191,7 +193,7 @@ describe('ErrorBoundary Security Tests', () => {
       // Second error of different type
       render(
         <ErrorBoundary showDetails={true}>
-          <SecurityThrowError errorType="sql-injection" shouldThrow={true} />
+          <SecurityThrowError errorType='sql-injection' shouldThrow={true} />
         </ErrorBoundary>
       );
 
@@ -204,7 +206,7 @@ describe('ErrorBoundary Security Tests', () => {
     test('should handle stack overflow errors gracefully', () => {
       render(
         <ErrorBoundary>
-          <SecurityThrowError errorType="stack-overflow" shouldThrow={true} />
+          <SecurityThrowError errorType='stack-overflow' shouldThrow={true} />
         </ErrorBoundary>
       );
 
@@ -217,7 +219,10 @@ describe('ErrorBoundary Security Tests', () => {
     test('should log errors without exposing sensitive information', () => {
       render(
         <ErrorBoundary>
-          <ThrowError shouldThrow={true} errorMessage="Database connection failed: password=secret123" />
+          <ThrowError
+            shouldThrow={true}
+            errorMessage='Database connection failed: password=secret123'
+          />
         </ErrorBoundary>
       );
 
@@ -231,7 +236,7 @@ describe('ErrorBoundary Security Tests', () => {
       // Get the logged error
       const loggedError = consoleSpy.mock.calls[0][1];
       expect(loggedError.message).toContain('Database connection failed');
-      
+
       // Note: In production, sensitive data should be redacted from logs
       // This test documents current behavior and highlights improvement needed
     });
@@ -262,32 +267,34 @@ describe('ErrorBoundary Security Tests', () => {
     test('should render safe fallback UI when showDetails is false', () => {
       render(
         <ErrorBoundary showDetails={false}>
-          <SecurityThrowError errorType="xss" shouldThrow={true} />
+          <SecurityThrowError errorType='xss' shouldThrow={true} />
         </ErrorBoundary>
       );
 
       // Should show error message but no details
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      expect(screen.getByText('An error occurred while loading the chat interface.')).toBeInTheDocument();
+      expect(
+        screen.getByText('An error occurred while loading the chat interface.')
+      ).toBeInTheDocument();
       expect(screen.queryByText('Error Details')).not.toBeInTheDocument();
     });
 
     test('should render error details safely when showDetails is true', () => {
       render(
         <ErrorBoundary showDetails={true}>
-          <SecurityThrowError errorType="xss" shouldThrow={true} />
+          <SecurityThrowError errorType='xss' shouldThrow={true} />
         </ErrorBoundary>
       );
 
       // Should show error details toggle
       expect(screen.getByText('Error Details')).toBeInTheDocument();
-      
+
       // Details should be collapsed by default
       expect(screen.queryByText(/<script>/)).not.toBeInTheDocument();
-      
+
       // Expand details
       fireEvent.click(screen.getByText('Error Details'));
-      
+
       // Should show details in a safe way (pre element with text content)
       expect(screen.getByText(/script.*alert.*XSS/)).toBeInTheDocument();
     });
@@ -299,11 +306,11 @@ describe('ErrorBoundary Security Tests', () => {
           super(props);
           this.state = { hasError: false };
         }
-        
+
         componentDidMount() {
           this.setState({ hasError: true, error: null, errorInfo: null });
         }
-        
+
         render() {
           if (this.state.hasError) {
             return (
@@ -318,7 +325,7 @@ describe('ErrorBoundary Security Tests', () => {
 
       // This test ensures the ErrorBoundary handles null error states
       const { rerender } = render(<DirectErrorComponent />);
-      
+
       // Re-render to trigger error state
       rerender(
         <ErrorBoundary showDetails={true}>
@@ -334,7 +341,7 @@ describe('ErrorBoundary Security Tests', () => {
     test('should render children normally when no error occurs', () => {
       render(
         <ErrorBoundary>
-          <div data-testid="child-component">Normal content</div>
+          <div data-testid='child-component'>Normal content</div>
           <div>More content</div>
         </ErrorBoundary>
       );
@@ -347,7 +354,7 @@ describe('ErrorBoundary Security Tests', () => {
 
     test('should prevent error propagation to parent components', () => {
       let parentErrorCaught = false;
-      
+
       const ParentComponent = () => {
         try {
           return (
@@ -381,7 +388,7 @@ describe('ErrorBoundary Security Tests', () => {
       // Should have appropriate ARIA roles and attributes
       const errorContainer = screen.getByRole('button', { name: 'Try Again' });
       expect(errorContainer).toBeInTheDocument();
-      
+
       // Should have focus management
       fireEvent.click(errorContainer);
       expect(errorContainer).toBeInTheDocument();
@@ -389,7 +396,7 @@ describe('ErrorBoundary Security Tests', () => {
 
     test('should maintain user data integrity during error states', () => {
       const mockOnRetry = jest.fn();
-      
+
       render(
         <ErrorBoundary onRetry={mockOnRetry}>
           <ThrowError shouldThrow={true} />
@@ -399,9 +406,9 @@ describe('ErrorBoundary Security Tests', () => {
       // User should be able to retry
       const retryButton = screen.getByText('Try Again');
       fireEvent.click(retryButton);
-      
+
       expect(mockOnRetry).toHaveBeenCalledTimes(1);
-      
+
       // Should be able to retry multiple times
       fireEvent.click(retryButton);
       expect(mockOnRetry).toHaveBeenCalledTimes(2);
