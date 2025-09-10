@@ -34,6 +34,7 @@ import { WebSocketProvider, useWebSocketContext } from './contexts/WebSocketCont
 import ProtectedRoute from './components/ProtectedRoute';
 import { useVersionCheck } from './hooks/useVersionCheck';
 import { api, authenticatedFetch } from './utils/api';
+import { deepNotEqual } from './utils/comparison';
 
 // Main App component with routing
 function AppContent() {
@@ -249,10 +250,9 @@ function AppContent() {
               newProject.name !== prevProject.name ||
               newProject.displayName !== prevProject.displayName ||
               newProject.fullPath !== prevProject.fullPath ||
-              JSON.stringify(newProject.sessionMeta) !== JSON.stringify(prevProject.sessionMeta) ||
-              JSON.stringify(newProject.sessions) !== JSON.stringify(prevProject.sessions) ||
-              JSON.stringify(newProject.cursorSessions) !==
-                JSON.stringify(prevProject.cursorSessions)
+              deepNotEqual(newProject.sessionMeta, prevProject.sessionMeta) ||
+              deepNotEqual(newProject.sessions, prevProject.sessions) ||
+              deepNotEqual(newProject.cursorSessions, prevProject.cursorSessions)
             );
           }) || data.length !== prevProjects.length;
 
@@ -385,8 +385,8 @@ function AppContent() {
               newProject.name !== prevProject.name ||
               newProject.displayName !== prevProject.displayName ||
               newProject.fullPath !== prevProject.fullPath ||
-              JSON.stringify(newProject.sessionMeta) !== JSON.stringify(prevProject.sessionMeta) ||
-              JSON.stringify(newProject.sessions) !== JSON.stringify(prevProject.sessions)
+              deepNotEqual(newProject.sessionMeta, prevProject.sessionMeta) ||
+              deepNotEqual(newProject.sessions, prevProject.sessions)
             );
           }) || freshProjects.length !== prevProjects.length;
 
@@ -398,7 +398,7 @@ function AppContent() {
         const refreshedProject = freshProjects.find((p) => p.name === selectedProject.name);
         if (refreshedProject) {
           // Only update selected project if it actually changed
-          if (JSON.stringify(refreshedProject) !== JSON.stringify(selectedProject)) {
+          if (deepNotEqual(refreshedProject, selectedProject)) {
             setSelectedProject(refreshedProject);
           }
 
@@ -409,7 +409,7 @@ function AppContent() {
             );
             if (
               refreshedSession &&
-              JSON.stringify(refreshedSession) !== JSON.stringify(selectedSession)
+              deepNotEqual(refreshedSession, selectedSession)
             ) {
               setSelectedSession(refreshedSession);
             }
