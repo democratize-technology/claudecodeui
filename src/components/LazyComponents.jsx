@@ -5,10 +5,63 @@
 
 import React, { Suspense, memo } from 'react';
 
-// Lazy load heavy components
-const LazyCodeEditor = React.lazy(() => import('./CodeEditor.jsx'));
-const LazyShell = React.lazy(() => import('./Shell.jsx'));
-const LazyImageViewer = React.lazy(() => import('./ImageViewer.jsx'));
+// Lazy load heavy components with error handling
+const LazyCodeEditor = React.lazy(() => 
+  import('./CodeEditor.jsx').catch(error => {
+    console.error('Failed to load CodeEditor component:', error);
+    return {
+      default: () => (
+        <div className="w-full h-64 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex flex-col items-center justify-center text-red-600 dark:text-red-400">
+          <p className="mb-2">Failed to load Code Editor</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-3 py-1 bg-red-100 dark:bg-red-900 rounded text-sm hover:bg-red-200 dark:hover:bg-red-800"
+          >
+            Reload Page
+          </button>
+        </div>
+      )
+    };
+  })
+);
+
+const LazyShell = React.lazy(() => 
+  import('./Shell.jsx').catch(error => {
+    console.error('Failed to load Shell component:', error);
+    return {
+      default: () => (
+        <div className="w-full h-96 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex flex-col items-center justify-center text-red-600 dark:text-red-400">
+          <p className="mb-2">Failed to load Terminal</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-3 py-1 bg-red-100 dark:bg-red-900 rounded text-sm hover:bg-red-200 dark:hover:bg-red-800"
+          >
+            Reload Page
+          </button>
+        </div>
+      )
+    };
+  })
+);
+
+const LazyImageViewer = React.lazy(() => 
+  import('./ImageViewer.jsx').catch(error => {
+    console.error('Failed to load ImageViewer component:', error);
+    return {
+      default: () => (
+        <div className="w-full h-48 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md flex flex-col items-center justify-center text-red-600 dark:text-red-400">
+          <p className="mb-2">Failed to load Image Viewer</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-3 py-1 bg-red-100 dark:bg-red-900 rounded text-sm hover:bg-red-200 dark:hover:bg-red-800"
+          >
+            Reload Page
+          </button>
+        </div>
+      )
+    };
+  })
+);
 
 // Loading fallbacks optimized for each component type
 const CodeEditorFallback = () => (
@@ -70,23 +123,75 @@ export function withLazyLoading(Component, fallback) {
   ));
 }
 
-// Route-based lazy loading for main app sections
+// Route-based lazy loading for main app sections with error handling
 export const LazyToolsSettings = React.lazy(() => 
-  import('./ToolsSettings.jsx').then(module => ({ 
-    default: module.default 
-  }))
+  import('./ToolsSettings.jsx')
+    .then(module => ({ 
+      default: module.default 
+    }))
+    .catch(error => {
+      console.error('Failed to load ToolsSettings component:', error);
+      // Return a fallback error component
+      return {
+        default: () => (
+          <div className="p-4 text-center text-red-600 dark:text-red-400">
+            <p>Failed to load Tools Settings</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-2 px-3 py-1 bg-red-100 dark:bg-red-900 rounded text-sm hover:bg-red-200 dark:hover:bg-red-800"
+            >
+              Retry
+            </button>
+          </div>
+        )
+      };
+    })
 );
 
 export const LazySidebar = React.lazy(() => 
-  import('./Sidebar.jsx').then(module => ({ 
-    default: module.default 
-  }))
+  import('./Sidebar.jsx')
+    .then(module => ({ 
+      default: module.default 
+    }))
+    .catch(error => {
+      console.error('Failed to load Sidebar component:', error);
+      return {
+        default: () => (
+          <div className="w-64 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 p-4 text-center text-red-600 dark:text-red-400">
+            <p className="text-sm">Failed to load Sidebar</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-2 px-2 py-1 bg-red-100 dark:bg-red-900 rounded text-xs hover:bg-red-200 dark:hover:bg-red-800"
+            >
+              Retry
+            </button>
+          </div>
+        )
+      };
+    })
 );
 
 export const LazyGitPanel = React.lazy(() => 
-  import('./GitPanel.jsx').then(module => ({ 
-    default: module.default 
-  }))
+  import('./GitPanel.jsx')
+    .then(module => ({ 
+      default: module.default 
+    }))
+    .catch(error => {
+      console.error('Failed to load GitPanel component:', error);
+      return {
+        default: () => (
+          <div className="w-full h-64 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-center text-red-600 dark:text-red-400">
+            <p>Failed to load Git Panel</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-2 px-3 py-1 bg-red-100 dark:bg-red-900 rounded text-sm hover:bg-red-200 dark:hover:bg-red-800"
+            >
+              Retry
+            </button>
+          </div>
+        )
+      };
+    })
 );
 
 // Component wrappers with optimized loading states
