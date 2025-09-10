@@ -39,9 +39,13 @@ function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 ios-bottom-safe transform transition-transform duration-300 ease-in-out shadow-lg ${
+      className={`fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 ios-bottom-safe transform transition-transform duration-300 ease-in-out shadow-lg no-transition ${
         isInputFocused ? 'translate-y-full' : 'translate-y-0'
       }`}
+      style={{
+        // Ensure smooth transitions without FOUC
+        willChange: isInputFocused ? 'transform' : 'auto'
+      }}
     >
         <div className='flex items-center justify-around py-1'>
           {navItems.map((item) => {
