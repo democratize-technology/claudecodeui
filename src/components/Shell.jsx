@@ -4,6 +4,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { ClipboardAddon } from '@xterm/addon-clipboard';
 import { WebglAddon } from '@xterm/addon-webgl';
 import 'xterm/css/xterm.css';
+import { api } from '../utils/api';
 
 // CSS to remove xterm focus outline
 const xtermStyles = `
@@ -418,11 +419,7 @@ function Shell({
       // Fetch server configuration to get the correct WebSocket URL
       let wsBaseUrl;
       try {
-        const configResponse = await fetch('/api/config', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const configResponse = await api.config();
         const config = await configResponse.json();
         wsBaseUrl = config.wsUrl;
 

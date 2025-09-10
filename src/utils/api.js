@@ -133,6 +133,55 @@ export const api = {
       })
   },
 
+  // MCP endpoints
+  mcp: {
+    config: {
+      read: () => authenticatedFetch('/api/mcp/config/read')
+    },
+    cli: {
+      list: () => authenticatedFetch('/api/mcp/cli/list'),
+      add: (serverData) => 
+        authenticatedFetch('/api/mcp/cli/add', {
+          method: 'POST',
+          body: JSON.stringify(serverData)
+        }),
+      addJson: (jsonData) =>
+        authenticatedFetch('/api/mcp/cli/add-json', {
+          method: 'POST',
+          body: JSON.stringify(jsonData)
+        }),
+      remove: (serverId, scope = 'user') =>
+        authenticatedFetch(`/api/mcp/cli/remove/${serverId}?scope=${scope}`, {
+          method: 'DELETE'
+        })
+    },
+    servers: {
+      list: (scope = 'user') => authenticatedFetch(`/api/mcp/servers?scope=${scope}`),
+      test: (serverId, scope = 'user') =>
+        authenticatedFetch(`/api/mcp/servers/${serverId}/test?scope=${scope}`, {
+          method: 'POST'
+        }),
+      tools: (serverId, scope = 'user') =>
+        authenticatedFetch(`/api/mcp/servers/${serverId}/tools?scope=${scope}`, {
+          method: 'POST'
+        })
+    }
+  },
+
+  // Cursor endpoints
+  cursor: {
+    config: () => authenticatedFetch('/api/cursor/config'),
+    mcp: () => authenticatedFetch('/api/cursor/mcp')
+  },
+
+  // Project file operations
+  uploadImages: (projectName, formData) =>
+    authenticatedFetch(`/api/projects/${projectName}/upload-images`, {
+      method: 'POST',
+      body: formData,
+      headers: {} // Let browser set Content-Type for FormData
+    }),
+
   // Generic GET method for any endpoint
   get: (endpoint) => authenticatedFetch(`/api${endpoint}`)
 };

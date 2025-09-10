@@ -18,6 +18,7 @@ import {
   Zap,
   FolderOpen
 } from 'lucide-react';
+import { api } from '../utils/api';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTasksSettings } from '../contexts/TasksSettingsContext';
 
@@ -111,13 +112,7 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
   // Fetch Cursor MCP servers
   const fetchCursorMcpServers = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
-      const response = await fetch('/api/cursor/mcp', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.cursor.mcp();
 
       if (response.ok) {
         const data = await response.json();
@@ -133,15 +128,8 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
   // MCP API functions
   const fetchMcpServers = async () => {
     try {
-      const token = localStorage.getItem('auth-token');
-
       // Try to read directly from config files for complete details
-      const configResponse = await fetch('/api/mcp/config/read', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const configResponse = await api.mcp.config.read();
 
       if (configResponse.ok) {
         const configData = await configResponse.json();
@@ -152,12 +140,7 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
       }
 
       // Fallback to Claude CLI
-      const cliResponse = await fetch('/api/mcp/cli/list', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const cliResponse = await api.mcp.cli.list();
 
       if (cliResponse.ok) {
         const cliData = await cliResponse.json();
@@ -185,12 +168,7 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
       }
 
       // Final fallback to direct config reading
-      const response = await fetch('/api/mcp/servers?scope=user', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.mcp.servers.list('user');
 
       if (response.ok) {
         const data = await response.json();
@@ -205,31 +183,22 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
 
   const saveMcpServer = async (serverData) => {
     try {
-      const token = localStorage.getItem('auth-token');
-
       if (editingMcpServer) {
         // For editing, remove old server and add new one
         await deleteMcpServer(editingMcpServer.id, 'user');
       }
 
       // Use Claude CLI to add the server
-      const response = await fetch('/api/mcp/cli/add', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: serverData.name,
-          type: serverData.type,
-          scope: serverData.scope,
-          projectPath: serverData.projectPath,
-          command: serverData.config?.command,
-          args: serverData.config?.args || [],
-          url: serverData.config?.url,
-          headers: serverData.config?.headers || {},
-          env: serverData.config?.env || {}
-        })
+      const response = await api.mcp.cli.add({
+        name: serverData.name,
+        type: serverData.type,
+        scope: serverData.scope,
+        projectPath: serverData.projectPath,
+        command: serverData.config?.command,
+        args: serverData.config?.args || [],
+        url: serverData.config?.url,
+        headers: serverData.config?.headers || {},
+        env: serverData.config?.env || {}
       });
 
       if (response.ok) {
@@ -252,16 +221,8 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
 
   const deleteMcpServer = async (serverId, scope = 'user') => {
     try {
-      const token = localStorage.getItem('auth-token');
-
       // Use Claude CLI to remove the server with proper scope
-      const response = await fetch(`/api/mcp/cli/remove/${serverId}?scope=${scope}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.mcp.cli.remove(serverId, scope);
 
       if (response.ok) {
         const result = await response.json();
@@ -283,14 +244,7 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
 
   const testMcpServer = async (serverId, scope = 'user') => {
     try {
-      const token = localStorage.getItem('auth-token');
-      const response = await fetch(`/api/mcp/servers/${serverId}/test?scope=${scope}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.mcp.servers.test(serverId, scope);
 
       if (response.ok) {
         const data = await response.json();
@@ -307,14 +261,7 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
 
   const discoverMcpTools = async (serverId, scope = 'user') => {
     try {
-      const token = localStorage.getItem('auth-token');
-      const response = await fetch(`/api/mcp/servers/${serverId}/tools?scope=${scope}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await api.mcp.servers.tools(serverId, scope);
 
       if (response.ok) {
         const data = await response.json();
@@ -495,19 +442,11 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
     try {
       if (mcpFormData.importMode === 'json') {
         // Use JSON import endpoint
-        const token = localStorage.getItem('auth-token');
-        const response = await fetch('/api/mcp/cli/add-json', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: mcpFormData.name,
-            jsonConfig: mcpFormData.jsonInput,
-            scope: mcpFormData.scope,
-            projectPath: mcpFormData.projectPath
-          })
+        const response = await api.mcp.cli.addJson({
+          name: mcpFormData.name,
+          jsonConfig: mcpFormData.jsonInput,
+          scope: mcpFormData.scope,
+          projectPath: mcpFormData.projectPath
         });
 
         if (response.ok) {

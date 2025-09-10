@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { api } from './api';
 
 export function useWebSocket() {
   const [ws, setWs] = useState(null);
@@ -50,11 +51,7 @@ export function useWebSocket() {
       // Fetch server configuration to get the correct WebSocket URL
       let wsBaseUrl;
       try {
-        const configResponse = await fetch('/api/config', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const configResponse = await api.config();
         const config = await configResponse.json();
         wsBaseUrl = config.wsUrl;
 

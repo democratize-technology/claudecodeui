@@ -1541,11 +1541,7 @@ function ChatInterface({
   // Load Cursor default model from config
   useEffect(() => {
     if (provider === 'cursor') {
-      fetch('/api/cursor/config', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('auth-token')}`
-        }
-      })
+      api.cursor.config()
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.config?.model?.modelId) {
@@ -3133,17 +3129,7 @@ function ChatInterface({
       });
 
       try {
-        const token = safeLocalStorage.getItem('auth-token');
-        const headers = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`/api/projects/${selectedProject.name}/upload-images`, {
-          method: 'POST',
-          headers: headers,
-          body: formData
-        });
+        const response = await api.uploadImages(selectedProject.name, formData);
 
         if (!response.ok) {
           throw new Error('Failed to upload images');
