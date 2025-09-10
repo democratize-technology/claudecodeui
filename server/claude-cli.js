@@ -10,7 +10,8 @@ const spawnFunction = process.platform === 'win32' ? crossSpawn : spawn;
 const activeClaudeProcesses = new Map(); // Track active processes by session ID
 
 async function spawnClaude(command, options = {}, ws) {
-  const { sessionId, _projectPath, cwd, resume, toolsSettings, permissionMode, images } = options;
+  return new Promise(async (resolve, reject) => {
+    const { sessionId, _projectPath, cwd, resume, toolsSettings, permissionMode, images } = options;
     let capturedSessionId = sessionId; // Track session ID throughout the process
     let sessionCreatedSent = false; // Track if we've already sent session-created event
 
