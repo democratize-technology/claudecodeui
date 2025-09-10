@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { api } from '../utils/api';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useErrorHandler } from '../utils/hooks/useErrorHandler';
+import { ERROR_CATEGORIES, ERROR_SEVERITY, withRetry } from '../utils/errorHandling';
 
 const AuthContext = createContext({
   user: null,
@@ -27,19 +28,37 @@ export const AuthProvider = ({ children }) => {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [error, setError] = useState(null);
 
+  // Initialize standardized error handling for authentication operations
+  const errorHandler = useErrorHandler({
+    defaultCategory: ERROR_CATEGORIES.AUTHENTICATION,
+    defaultSeverity: ERROR_SEVERITY.MEDIUM,
+    autoReset: false, // Keep auth errors persistent until resolved
+    onError: (processedError) => {
+      // Map standardized errors back to component state for backward compatibility
+      setError(processedError.userMessage);
+    }
+  });
+
   // Check authentication status on mount
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
+      errorHandler.resetError();
 
-      // Check if system needs setup
-      const statusResponse = await api.auth.status();
-      const statusData = await statusResponse.json();
+      // Check if system needs setup with retry logic for network issues
+      const statusOperation = async () => {
+        const statusResponse = await errorHandler.fetchWithErrorHandling('/api/auth/status', {
+          method: 'GET'
+        });
+        return statusResponse.json();
+      };
+
+      const statusData = await withRetry(statusOperation, 3, 1000, ERROR_CATEGORIES.NETWORK);
 
       if (statusData.needsSetup) {
         setNeedsSetup(true);
@@ -50,79 +69,164 @@ export const AuthProvider = ({ children }) => {
       // If we have a token, verify it
       if (token) {
         try {
-          const userResponse = await api.auth.user();
+          const userOperation = async () => {
+            const userResponse = await errorHandler.fetchWithErrorHandling('/api/auth/user', {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            return userResponse.json();
+          };
 
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            setUser(userData.user);
-            setNeedsSetup(false);
-          } else {
-            // Token is invalid
-            localStorage.removeItem('auth-token');
-            setToken(null);
-            setUser(null);
-          }
+          const userData = await userOperation();
+          setUser(userData.user);
+          setNeedsSetup(false);
         } catch (error) {
-          console.error('Token verification failed:', error);
+          // Token is invalid - handle gracefully
+          errorHandler.reportError(error, ERROR_CATEGORIES.AUTHENTICATION, ERROR_SEVERITY.LOW, {
+            operation: 'token verification',
+            action: 'clearing_token'
+          });
           localStorage.removeItem('auth-token');
           setToken(null);
           setUser(null);
         }
       }
     } catch (error) {
-      console.error('Auth status check failed:', error);
-      setError('Failed to check authentication status');
+      errorHandler.reportError(error, ERROR_CATEGORIES.NETWORK, ERROR_SEVERITY.HIGH, {
+        operation: 'auth status check',
+        critical: true
+      });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token, errorHandler]);
 
   const login = async (username, password) => {
     try {
       setError(null);
-      const response = await api.auth.login(username, password);
+      errorHandler.resetError();
 
-      const data = await response.json();
+      const loginOperation = async () => {
+        const response = await errorHandler.fetchWithErrorHandling('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
 
-      if (response.ok) {
-        setToken(data.token);
-        setUser(data.user);
-        localStorage.setItem('auth-token', data.token);
-        return { success: true };
-      } else {
-        setError(data.error || 'Login failed');
-        return { success: false, error: data.error || 'Login failed' };
-      }
+        const data = await response.json();
+
+        // Handle authentication-specific error responses
+        if (!response.ok) {
+          const authError = new Error(data.error || 'Login failed');
+          authError.status = response.status;
+          authError.authFailure = true;
+          throw authError;
+        }
+
+        return data;
+      };
+
+      const data = await loginOperation();
+
+      // Success case
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem('auth-token', data.token);
+      return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
-      const errorMessage = 'Network error. Please try again.';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+      let severity = ERROR_SEVERITY.HIGH;
+      let category = ERROR_CATEGORIES.AUTHENTICATION;
+
+      // Determine appropriate error categorization
+      if (error.authFailure) {
+        severity = ERROR_SEVERITY.MEDIUM; // User credential errors
+      } else if (error.status >= 500) {
+        category = ERROR_CATEGORIES.NETWORK;
+        severity = ERROR_SEVERITY.HIGH;
+      }
+
+      const processedError = errorHandler.reportError(error, category, severity, {
+        operation: 'login',
+        username: `${username?.substring(0, 3)}***`, // Log partial username for debugging
+        status: error.status
+      });
+
+      return {
+        success: false,
+        error: processedError.userMessage,
+        canRetry: processedError.shouldRetry
+      };
     }
   };
 
   const register = async (username, password) => {
     try {
       setError(null);
-      const response = await api.auth.register(username, password);
+      errorHandler.resetError();
 
-      const data = await response.json();
+      const registerOperation = async () => {
+        const response = await errorHandler.fetchWithErrorHandling('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
 
-      if (response.ok) {
-        setToken(data.token);
-        setUser(data.user);
-        setNeedsSetup(false);
-        localStorage.setItem('auth-token', data.token);
-        return { success: true };
-      } else {
-        setError(data.error || 'Registration failed');
-        return { success: false, error: data.error || 'Registration failed' };
-      }
+        const data = await response.json();
+
+        // Handle registration-specific error responses
+        if (!response.ok) {
+          const regError = new Error(data.error || 'Registration failed');
+          regError.status = response.status;
+          regError.registrationFailure = true;
+
+          // Determine if this is a validation error or system error
+          if (response.status === 400 || response.status === 409) {
+            regError.validationFailure = true;
+          }
+
+          throw regError;
+        }
+
+        return data;
+      };
+
+      const data = await registerOperation();
+
+      // Success case
+      setToken(data.token);
+      setUser(data.user);
+      setNeedsSetup(false);
+      localStorage.setItem('auth-token', data.token);
+      return { success: true };
     } catch (error) {
-      console.error('Registration error:', error);
-      const errorMessage = 'Network error. Please try again.';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+      let severity = ERROR_SEVERITY.HIGH;
+      let category = ERROR_CATEGORIES.AUTHENTICATION;
+
+      // Determine appropriate error categorization
+      if (error.validationFailure) {
+        category = ERROR_CATEGORIES.VALIDATION;
+        severity = ERROR_SEVERITY.MEDIUM;
+      } else if (error.registrationFailure) {
+        severity = ERROR_SEVERITY.MEDIUM;
+      } else if (error.status >= 500) {
+        category = ERROR_CATEGORIES.NETWORK;
+        severity = ERROR_SEVERITY.HIGH;
+      }
+
+      const processedError = errorHandler.reportError(error, category, severity, {
+        operation: 'registration',
+        username: `${username?.substring(0, 3)}***`,
+        status: error.status,
+        isSetup: true
+      });
+
+      return {
+        success: false,
+        error: processedError.userMessage,
+        canRetry: processedError.shouldRetry
+      };
     }
   };
 
@@ -130,12 +234,31 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('auth-token');
+    errorHandler.resetError();
 
-    // Optional: Call logout endpoint for logging
+    // Optional: Call logout endpoint for logging (non-critical operation)
     if (token) {
-      api.auth.logout().catch((error) => {
-        console.error('Logout endpoint error:', error);
-      });
+      errorHandler
+        .executeWithFallback(
+          async () => {
+            const response = await errorHandler.fetchWithErrorHandling('/api/auth/logout', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            return response.json();
+          },
+          null, // fallback value - logout succeeds even if endpoint fails
+          ERROR_CATEGORIES.NETWORK
+        )
+        .catch((error) => {
+          // Log but don't show error to user - logout already succeeded locally
+          errorHandler.reportError(error, ERROR_CATEGORIES.NETWORK, ERROR_SEVERITY.LOW, {
+            operation: 'logout endpoint',
+            critical: false
+          });
+        });
     }
   };
 

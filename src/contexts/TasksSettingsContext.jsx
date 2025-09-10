@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api } from '../utils/api';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useErrorHandler } from '../utils/hooks/useErrorHandler';
+import { ERROR_CATEGORIES, ERROR_SEVERITY } from '../utils/errorHandling';
 
 const TasksSettingsContext = createContext({
   tasksEnabled: true,
@@ -31,45 +32,91 @@ export const TasksSettingsProvider = ({ children }) => {
   const [installationStatus, setInstallationStatus] = useState(null);
   const [isCheckingInstallation, setIsCheckingInstallation] = useState(true);
 
+  // Initialize error handling for TaskMaster operations
+  const errorHandler = useErrorHandler({
+    defaultCategory: ERROR_CATEGORIES.EXTERNAL_SERVICE,
+    defaultSeverity: ERROR_SEVERITY.LOW, // TaskMaster failures shouldn't be critical
+    autoReset: true, // Auto-reset errors for background checks
+    onError: (processedError) => {
+      // For TaskMaster errors, we generally want graceful degradation
+      if (processedError.severity === ERROR_SEVERITY.HIGH) {
+        console.warn('TaskMaster service issue:', processedError.userMessage);
+      }
+    }
+  });
+
   // Save to localStorage whenever tasksEnabled changes
   useEffect(() => {
     localStorage.setItem('tasks-enabled', JSON.stringify(tasksEnabled));
   }, [tasksEnabled]);
 
   // Check TaskMaster installation status asynchronously on component mount
-  useEffect(() => {
-    const checkInstallation = async () => {
-      try {
-        const response = await api.get('/taskmaster/installation-status');
-        if (response.ok) {
-          const data = await response.json();
-          setInstallationStatus(data);
-          setIsTaskMasterInstalled(data.installation?.isInstalled || false);
-          setIsTaskMasterReady(data.isReady || false);
+  const checkInstallation = useCallback(async () => {
+    try {
+      // Use graceful fallback for TaskMaster status check (non-critical)
+      const installationData = await errorHandler.executeWithFallback(
+        async () => {
+          const response = await errorHandler.fetchWithErrorHandling(
+            '/api/taskmaster/installation-status',
+            {
+              method: 'GET'
+            }
+          );
+          return response.json();
+        },
+        // Fallback: assume TaskMaster is not available
+        {
+          installation: { isInstalled: false },
+          isReady: false,
+          fallback: true
+        },
+        ERROR_CATEGORIES.EXTERNAL_SERVICE
+      );
 
-          // If TaskMaster is not installed and user hasn't explicitly enabled tasks,
-          // disable tasks automatically
-          const userEnabledTasks = localStorage.getItem('tasks-enabled');
-          if (!data.installation?.isInstalled && !userEnabledTasks) {
-            setTasksEnabled(false);
-          }
-        } else {
-          console.error('Failed to check TaskMaster installation status');
-          setIsTaskMasterInstalled(false);
-          setIsTaskMasterReady(false);
-        }
-      } catch (error) {
-        console.error('Error checking TaskMaster installation:', error);
-        setIsTaskMasterInstalled(false);
-        setIsTaskMasterReady(false);
-      } finally {
-        setIsCheckingInstallation(false);
+      setInstallationStatus(installationData);
+      setIsTaskMasterInstalled(installationData.installation?.isInstalled || false);
+      setIsTaskMasterReady(installationData.isReady || false);
+
+      // If TaskMaster is not installed and user hasn't explicitly enabled tasks,
+      // disable tasks automatically
+      const userEnabledTasks = localStorage.getItem('tasks-enabled');
+      if (!installationData.installation?.isInstalled && !userEnabledTasks) {
+        setTasksEnabled(false);
       }
-    };
 
+      // Log successful check with fallback indicator
+      if (installationData.fallback) {
+        errorHandler.reportError(
+          new Error('TaskMaster service unavailable'),
+          ERROR_CATEGORIES.EXTERNAL_SERVICE,
+          ERROR_SEVERITY.LOW,
+          {
+            operation: 'installation check',
+            fallbackUsed: true,
+            impact: 'tasks disabled'
+          }
+        );
+      }
+    } catch (error) {
+      // This should rarely happen due to fallback, but handle gracefully
+      errorHandler.reportError(error, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.MEDIUM, {
+        operation: 'installation check',
+        critical: false
+      });
+
+      // Set safe defaults
+      setIsTaskMasterInstalled(false);
+      setIsTaskMasterReady(false);
+      setInstallationStatus(null);
+    } finally {
+      setIsCheckingInstallation(false);
+    }
+  }, [errorHandler]);
+
+  useEffect(() => {
     // Run check asynchronously without blocking initial render
     setTimeout(checkInstallation, 0);
-  }, []);
+  }, [checkInstallation]);
 
   const toggleTasksEnabled = () => {
     setTasksEnabled((prev) => !prev);
