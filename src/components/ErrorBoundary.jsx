@@ -3,7 +3,7 @@ import React from 'react';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { hasError: false, error: null, errorInfo: null, retryCount: 0 };
   }
 
   static getDerivedStateFromError(error) {
@@ -20,6 +20,19 @@ class ErrorBoundary extends React.Component {
       error: error,
       errorInfo: errorInfo
     });
+  }
+
+  componentDidUpdate(prevProps) {
+    // Reset error state when children change after a manual reset attempt
+    // This helps with cases where parent components re-render with new children
+    // Only reset if we manually clicked "Try Again" (retryCount > 0) and props changed
+    if (this.state.hasError && this.state.retryCount > 0 && prevProps.children !== this.props.children) {
+      this.setState({
+        hasError: false,
+        error: null,
+        errorInfo: null
+      });
+    }
   }
 
   render() {
@@ -55,7 +68,12 @@ class ErrorBoundary extends React.Component {
             <div className='mt-4'>
               <button
                 onClick={() => {
-                  this.setState({ hasError: false, error: null, errorInfo: null });
+                  this.setState({ 
+                    hasError: false, 
+                    error: null, 
+                    errorInfo: null, 
+                    retryCount: this.state.retryCount + 1 
+                  });
                   if (this.props.onRetry) this.props.onRetry();
                 }}
                 className='bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500'
