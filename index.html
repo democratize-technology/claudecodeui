@@ -7,6 +7,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Claude Code UI</title>
     
+    <!-- Prevent FOUC by setting theme before React renders -->
+    <script>
+      (function() {
+        try {
+          // Disable transitions during initial load
+          document.documentElement.classList.add('no-transition');
+          
+          const savedTheme = localStorage.getItem('theme');
+          const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+          const themeValue = isDark ? 'dark' : 'light';
+          
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          }
+          
+          // COORDINATION BRIDGE: Write atomic theme state for React coordination
+          try {
+            sessionStorage.setItem('theme-coordination', JSON.stringify({
+              scriptApplied: true,
+              theme: themeValue,
+              timestamp: Date.now()
+            }));
+          } catch (sessionError) {
+            // sessionStorage unavailable - graceful degradation
+            console.warn('Theme coordination unavailable:', sessionError);
+          }
+          
+          // Re-enable transitions after a short delay
+          setTimeout(function() {
+            document.documentElement.classList.remove('no-transition');
+          }, 100);
+        } catch (e) {
+          // Fail silently if localStorage is not available
+          document.documentElement.classList.remove('no-transition');
+        }
+      })();
+    </script>
+    
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
     

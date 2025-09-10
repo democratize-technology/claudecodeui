@@ -74,6 +74,12 @@
     box-sizing: border-box;
   }
   
+  /* Disable transitions during page load to prevent FOUC */
+  .no-transition * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
   body {
     @apply bg-background text-foreground;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -98,15 +104,29 @@
     transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  /* Color transitions for theme switching - exclude interactive elements */
-  body, div, section, article, aside, header, footer, nav, main,
-  h1, h2, h3, h4, h5, h6, p, span, blockquote,
-  ul, ol, li, dl, dt, dd,
-  table, thead, tbody, tfoot, tr, td, th,
-  form, fieldset, legend, label {
+  /* Theme color transitions - only for specific components to prevent flashing */
+  .theme-transition {
     transition: background-color 200ms ease-in-out, 
                 border-color 200ms ease-in-out,
                 color 200ms ease-in-out;
+  }
+
+  /* Apply theme transitions only to non-critical elements */
+  .sidebar-transition,
+  .modal-transition,
+  .card,
+  nav:not(.no-transition),
+  .bg-white,
+  .bg-gray-50,
+  .bg-gray-100,
+  .bg-gray-800,
+  .bg-gray-900,
+  .dark\:bg-gray-800,
+  .dark\:bg-gray-900,
+  [class*="border-gray"] {
+    transition: background-color 150ms ease-in-out, 
+                border-color 150ms ease-in-out,
+                color 150ms ease-in-out;
   }
   
   /* Transform transitions */
