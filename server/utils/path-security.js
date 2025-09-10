@@ -22,7 +22,12 @@ const ALLOWED_BASE_DIRECTORIES = [
   // User's home directory for Claude/Cursor projects
   os.homedir(),
   // Temp directories for uploads (must be within user's temp space)
-  path.join(os.tmpdir(), 'claude-ui-uploads')
+  path.join(os.tmpdir(), 'claude-ui-uploads'),
+  // Workspace directory for project creation (common in containerized environments)
+  '/workspace',
+  // Current working directory and its workspace subdirectory (for development)
+  process.cwd(),
+  path.join(process.cwd(), 'workspace')
 ];
 
 /**
