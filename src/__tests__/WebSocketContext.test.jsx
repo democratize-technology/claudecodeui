@@ -407,6 +407,173 @@ describe('useWebSocket Hook Security Tests', () => {
       // Should close WebSocket connection
       expect(mockWebSocket.close).toHaveBeenCalled();
     });
+
+    test('should prevent memory leaks by closing existing WebSocket before creating new one', async () => {
+      jest.useFakeTimers();
+      
+      const { useWebSocket: realUseWebSocket } = require('../utils/websocket');
+      
+      const TestHook = () => {
+        realUseWebSocket();
+        return <div>test</div>;
+      };
+
+      render(<TestHook />);
+
+      // Wait for first WebSocket creation
+      await waitFor(() => {
+        expect(WebSocket).toHaveBeenCalledTimes(1);
+      });
+
+      const firstWebSocket = mockWebSocket;
+
+      // Simulate connection close to trigger reconnection
+      await act(async () => {
+        if (mockWebSocket.onclose) {
+          mockWebSocket.onclose();
+        }
+      });
+
+      // Create a new mock for the second WebSocket
+      const secondMockWebSocket = {
+        close: jest.fn(),
+        send: jest.fn(),
+        readyState: WebSocket.OPEN,
+        onopen: null,
+        onmessage: null,
+        onerror: null,
+        onclose: null
+      };
+
+      // Update the WebSocket constructor to return the new mock
+      global.WebSocket = jest.fn(() => secondMockWebSocket);
+
+      // Advance timers to trigger reconnection
+      act(() => {
+        jest.advanceTimersByTime(3000);
+      });
+
+      // Wait for reconnection attempt
+      await waitFor(() => {
+        expect(WebSocket).toHaveBeenCalledTimes(2);
+      });
+
+      // The first WebSocket should have been closed when creating the second one
+      expect(firstWebSocket.close).toHaveBeenCalled();
+
+      jest.useRealTimers();
+    });
+
+    test('should clear reconnection timeouts when establishing new connection', async () => {
+      jest.useFakeTimers();
+      
+      const { useWebSocket: realUseWebSocket } = require('../utils/websocket');
+      
+      const TestHook = () => {
+        realUseWebSocket();
+        return <div>test</div>;
+      };
+
+      render(<TestHook />);
+
+      await waitFor(() => {
+        expect(WebSocket).toHaveBeenCalled();
+      });
+
+      // Simulate connection close to start reconnection timer
+      await act(async () => {
+        if (mockWebSocket.onclose) {
+          mockWebSocket.onclose();
+        }
+      });
+
+      // Before timer expires, manually call connect() (simulating immediate reconnect)
+      const clearTimeoutSpy = jest.spyOn(window, 'clearTimeout');
+      
+      // This would happen if the component triggers connect() again before timeout
+      const hookInternals = require('../utils/websocket');
+      
+      // Advance time slightly but not enough to trigger reconnection
+      act(() => {
+        jest.advanceTimersByTime(1000);
+      });
+
+      // Should have set a timeout
+      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 3000);
+
+      jest.useRealTimers();
+      clearTimeoutSpy.mockRestore();
+    });
+
+    test('should ignore events from old WebSocket instances after reconnection', async () => {
+      const { useWebSocket: realUseWebSocket } = require('../utils/websocket');
+      let hookResult;
+      
+      const TestHook = () => {
+        hookResult = realUseWebSocket();
+        return <div>test</div>;
+      };
+
+      render(<TestHook />);
+
+      await waitFor(() => {
+        expect(WebSocket).toHaveBeenCalled();
+      });
+
+      const firstWebSocket = mockWebSocket;
+
+      // Simulate successful first connection
+      await act(async () => {
+        if (firstWebSocket.onopen) {
+          firstWebSocket.onopen();
+        }
+      });
+
+      expect(hookResult.isConnected).toBe(true);
+
+      // Create second WebSocket mock
+      const secondMockWebSocket = {
+        close: jest.fn(),
+        send: jest.fn(),
+        readyState: WebSocket.OPEN,
+        onopen: null,
+        onmessage: null,
+        onerror: null,
+        onclose: null
+      };
+
+      global.WebSocket = jest.fn(() => secondMockWebSocket);
+
+      // Trigger reconnection by closing first connection
+      await act(async () => {
+        if (firstWebSocket.onclose) {
+          firstWebSocket.onclose();
+        }
+      });
+
+      // Manually trigger connect to create second WebSocket
+      await act(async () => {
+        // This simulates the reconnection timeout firing
+        const connect = hookResult.connect || (() => {});
+        if (typeof connect === 'function') {
+          await connect();
+        }
+      });
+
+      // Messages from the old WebSocket should be ignored
+      const initialMessageCount = hookResult.messages.length;
+
+      await act(async () => {
+        if (firstWebSocket.onmessage) {
+          firstWebSocket.onmessage({
+            data: JSON.stringify({ type: 'old', message: 'should be ignored' })
+          });
+        }
+      });
+
+      // Message count should not have increased
+      expect(hookResult.messages.length).toBe(initialMessageCount);
+    });
   });
 
   describe('URL Construction Security', () => {

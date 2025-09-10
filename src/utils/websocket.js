@@ -5,22 +5,41 @@ export function useWebSocket() {
   const [messages, setMessages] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
   const reconnectTimeoutRef = useRef(null);
+  const wsRef = useRef(null); // Store WebSocket instance for proper cleanup
 
   useEffect(() => {
     connect();
     
     return () => {
+      // Clear reconnection timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
-      if (ws) {
-        ws.close();
+      // Close WebSocket using ref (not stale state)
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
       }
     };
-  }, []); // Keep dependency array but add proper cleanup
+  }, []); // Empty dependency array is correct with ref-based cleanup
 
   const connect = async () => {
     try {
+      // Clear any existing reconnection timeout
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      // Close existing WebSocket connection if any
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+        setWs(null);
+        setIsConnected(false);
+      }
+
       // Get authentication token
       const token = localStorage.getItem('auth-token');
       if (!token) {
@@ -59,28 +78,41 @@ export function useWebSocket() {
       const wsUrl = `${wsBaseUrl}/ws?token=${encodeURIComponent(token)}`;
       const websocket = new WebSocket(wsUrl);
 
+      // Store WebSocket instance in ref for proper cleanup
+      wsRef.current = websocket;
+
       websocket.onopen = () => {
-        setIsConnected(true);
-        setWs(websocket);
+        // Only update state if this is still the current WebSocket instance
+        if (wsRef.current === websocket) {
+          setIsConnected(true);
+          setWs(websocket);
+        }
       };
 
       websocket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          setMessages(prev => [...prev, data]);
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+        // Only process messages if this is still the current WebSocket instance
+        if (wsRef.current === websocket) {
+          try {
+            const data = JSON.parse(event.data);
+            setMessages(prev => [...prev, data]);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
         }
       };
 
       websocket.onclose = () => {
-        setIsConnected(false);
-        setWs(null);
-        
-        // Attempt to reconnect after 3 seconds
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connect();
-        }, 3000);
+        // Only handle close if this is still the current WebSocket instance
+        if (wsRef.current === websocket) {
+          wsRef.current = null;
+          setIsConnected(false);
+          setWs(null);
+          
+          // Attempt to reconnect after 3 seconds
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, 3000);
+        }
       };
 
       websocket.onerror = (error) => {
@@ -93,8 +125,8 @@ export function useWebSocket() {
   };
 
   const sendMessage = (message) => {
-    if (ws && isConnected) {
-      ws.send(JSON.stringify(message));
+    if (wsRef.current && isConnected) {
+      wsRef.current.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket not connected');
     }
