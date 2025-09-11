@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { ClipboardAddon } from '@xterm/addon-clipboard';
-import { WebglAddon } from '@xterm/addon-webgl';
+import WebglAddon from '@xterm/addon-webgl';
 import 'xterm/css/xterm.css';
 import { api } from '../utils/api';
 
