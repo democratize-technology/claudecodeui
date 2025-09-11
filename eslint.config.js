@@ -181,22 +181,7 @@ export default [
     }
   },
 
-  // Service Worker configuration
-  {
-    files: ['**/sw.js', '**/service-worker.js', '**/serviceWorker.js'],
-    languageOptions: {
-      globals: {
-        self: 'readonly',
-        caches: 'readonly',
-        clients: 'readonly',
-        skipWaiting: 'readonly',
-        importScripts: 'readonly'
-      }
-    },
-    rules: {
-      'no-console': 'off' // Allow console in service workers
-    }
-  },
+  // Service Worker configuration - DISABLED (removed)
 
   // Node.js utility files configuration
   {

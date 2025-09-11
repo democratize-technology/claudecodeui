@@ -257,7 +257,7 @@ export const TaskMasterProvider = ({ children }) => {
         token: !!token
       });
     }
-  }, [refreshProjects, refreshMCPStatus, authLoading, user, token]);
+  }, [authLoading, user, token]); // Removed function dependencies to prevent infinite loop
 
   // Clear errors when authentication changes
   useEffect(() => {
