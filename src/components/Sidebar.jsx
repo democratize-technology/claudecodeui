@@ -29,6 +29,7 @@ import ClaudeLogo from './ClaudeLogo';
 import CursorLogo from './CursorLogo.jsx';
 import TaskIndicator from './TaskIndicator';
 import { api } from '../utils/api';
+import { useMultipleLoadingStates } from '../utils/hooks/useLoadingState';
 import { useTaskMaster } from '../contexts/TaskMasterContext';
 import { useTasksSettings } from '../contexts/TasksSettingsContext';
 
@@ -80,16 +81,20 @@ function Sidebar({
   const [showNewProject, setShowNewProject] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [newProjectPath, setNewProjectPath] = useState('');
-  const [creatingProject, setCreatingProject] = useState(false);
+
+  const {
+    creatingProjectLoading: creatingProject,
+    refreshingLoading: isRefreshing,
+    executeNamedAsync
+  } = useMultipleLoadingStates(['creatingProject', 'refreshing']);
+
   const [loadingSessions, setLoadingSessions] = useState({});
   const [additionalSessions, setAdditionalSessions] = useState({});
   const [initialSessionsLoaded, setInitialSessionsLoaded] = useState(new Set());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [projectSortOrder, setProjectSortOrder] = useState('name');
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [editingSession, setEditingSession] = useState(null);
   const [editingSessionName, setEditingSessionName] = useState('');
-  const [generatingSummary, setGeneratingSummary] = useState({});
   const [searchFilter, setSearchFilter] = useState('');
 
   // TaskMaster context
@@ -368,31 +373,29 @@ function Sidebar({
       return;
     }
 
-    setCreatingProject(true);
-
     try {
-      const response = await api.createProject(newProjectPath.trim());
+      await executeNamedAsync(async () => {
+        const response = await api.createProject(newProjectPath.trim());
 
-      if (response.ok) {
-        const result = await response.json();
-        setShowNewProject(false);
-        setNewProjectPath('');
+        if (response.ok) {
+          const result = await response.json();
+          setShowNewProject(false);
+          setNewProjectPath('');
 
-        // Refresh projects to show the new one
-        if (window.refreshProjects) {
-          window.refreshProjects();
+          // Refresh projects to show the new one
+          if (window.refreshProjects) {
+            window.refreshProjects();
+          } else {
+            window.location.reload();
+          }
         } else {
-          window.location.reload();
+          const error = await response.json();
+          alert(error.error || 'Failed to create project. Please try again.');
         }
-      } else {
-        const error = await response.json();
-        alert(error.error || 'Failed to create project. Please try again.');
-      }
+      }, 'creatingProject', 'project-create');
     } catch (error) {
       console.error('Error creating project:', error);
       alert('Error creating project. Please try again.');
-    } finally {
-      setCreatingProject(false);
     }
   };
 
@@ -480,11 +483,12 @@ function Sidebar({
               size='sm'
               className='h-9 w-9 px-0 hover:bg-accent transition-colors duration-200 group'
               onClick={async () => {
-                setIsRefreshing(true);
                 try {
-                  await onRefresh();
-                } finally {
-                  setIsRefreshing(false);
+                  await executeNamedAsync(async () => {
+                    await onRefresh();
+                  }, 'refreshing', 'projects-refresh');
+                } catch (error) {
+                  console.error('Error refreshing:', error);
                 }
               }}
               disabled={isRefreshing}
@@ -522,11 +526,12 @@ function Sidebar({
               <button
                 className='w-8 h-8 rounded-md bg-background border border-border flex items-center justify-center active:scale-95 transition-all duration-150'
                 onClick={async () => {
-                  setIsRefreshing(true);
                   try {
-                    await onRefresh();
-                  } finally {
-                    setIsRefreshing(false);
+                    await executeNamedAsync(async () => {
+                      await onRefresh();
+                    }, 'refreshing', 'projects-refresh');
+                  } catch (error) {
+                    console.error('Error refreshing:', error);
                   }
                 }}
                 disabled={isRefreshing}

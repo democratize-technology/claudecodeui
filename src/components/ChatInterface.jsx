@@ -30,6 +30,7 @@ import PermissionModeSelector from './PermissionModeSelector';
 import safeLocalStorage from '../utils/safeLocalStorage';
 import { MicButton } from './MicButton.jsx';
 import { api, authenticatedFetch } from '../utils/api';
+import { useMultipleLoadingStates } from '../utils/hooks/useLoadingState';
 
 // Format "Claude AI usage limit reached|<epoch>" into a local time string
 function formatUsageLimitText(text) {
@@ -1471,12 +1472,16 @@ function ChatInterface({
     }
     return [];
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    loadingLoading: isLoading,
+    sessionMessagesLoading: isLoadingSessionMessages,
+    moreMessagesLoading: isLoadingMoreMessages,
+    executeNamedAsync
+  } = useMultipleLoadingStates(['loading', 'sessionMessages', 'moreMessages']);
+
   const [currentSessionId, setCurrentSessionId] = useState(selectedSession?.id || null);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [sessionMessages, setSessionMessages] = useState([]);
-  const [isLoadingSessionMessages, setIsLoadingSessionMessages] = useState(false);
-  const [isLoadingMoreMessages, setIsLoadingMoreMessages] = useState(false);
   const [messagesOffset, setMessagesOffset] = useState(0);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [totalMessages, setTotalMessages] = useState(0);

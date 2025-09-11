@@ -18,6 +18,7 @@ import {
 import { cn } from '../lib/utils';
 import { useTaskMaster } from '../contexts/TaskMasterContext';
 import { api } from '../utils/api';
+import { useLoadingState, useMultipleLoadingStates } from '../utils/hooks/useLoadingState';
 import Shell from './Shell';
 import TaskDetail from './TaskDetail';
 
@@ -37,28 +38,28 @@ const NextTaskBanner = ({ onShowAllTasks, onStartTask, className = '' }) => {
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [showCLI, setShowCLI] = useState(false);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { isLoading, executeAsync } = useLoadingState();
 
   // Handler functions
   const handleInitializeTaskMaster = async () => {
     if (!currentProject) return;
 
-    setIsLoading(true);
     try {
-      const response = await api.taskmaster.init(currentProject.name);
-      if (response.ok) {
-        await refreshProjects();
-        setShowTaskOptions(false);
-      } else {
-        const error = await response.json();
-        console.error('Failed to initialize TaskMaster:', error);
-        alert(`Failed to initialize TaskMaster: ${error.message}`);
-      }
+      await executeAsync(async () => {
+        const response = await api.taskmaster.init(currentProject.name);
+        if (response.ok) {
+          await refreshProjects();
+          setShowTaskOptions(false);
+        } else {
+          const error = await response.json();
+          console.error('Failed to initialize TaskMaster:', error);
+          alert(`Failed to initialize TaskMaster: ${error.message}`);
+        }
+      });
     } catch (error) {
       console.error('Error initializing TaskMaster:', error);
       alert('Error initializing TaskMaster. Please try again.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -401,32 +402,32 @@ const CreateTaskModal = ({ currentProject, onClose, onTaskCreated }) => {
     useAI: false,
     prompt: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { isLoading: isSubmitting, executeAsync } = useLoadingState();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentProject) return;
 
-    setIsSubmitting(true);
     try {
-      const taskData = formData.useAI
-        ? { prompt: formData.prompt, priority: formData.priority }
-        : { title: formData.title, description: formData.description, priority: formData.priority };
+      await executeAsync(async () => {
+        const taskData = formData.useAI
+          ? { prompt: formData.prompt, priority: formData.priority }
+          : { title: formData.title, description: formData.description, priority: formData.priority };
 
-      const response = await api.taskmaster.addTask(currentProject.name, taskData);
+        const response = await api.taskmaster.addTask(currentProject.name, taskData);
 
-      if (response.ok) {
-        onTaskCreated();
-      } else {
-        const error = await response.json();
-        console.error('Failed to create task:', error);
-        alert(`Failed to create task: ${error.message}`);
-      }
+        if (response.ok) {
+          onTaskCreated();
+        } else {
+          const error = await response.json();
+          console.error('Failed to create task:', error);
+          alert(`Failed to create task: ${error.message}`);
+        }
+      });
     } catch (error) {
       console.error('Error creating task:', error);
       alert('Error creating task. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -551,27 +552,31 @@ const TemplateSelector = ({ currentProject, onClose, onTemplateApplied }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [customizations, setCustomizations] = useState({});
   const [fileName, setFileName] = useState('prd.txt');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isApplying, setIsApplying] = useState(false);
   const [step, setStep] = useState('select'); // 'select', 'customize', 'generate'
+
+  const {
+    loadingLoading: isLoading,
+    applyingLoading: isApplying,
+    executeNamedAsync
+  } = useMultipleLoadingStates(['loading', 'applying']);
 
   useEffect(() => {
     const loadTemplates = async () => {
       try {
-        const response = await api.taskmaster.getTemplates();
-        if (response.ok) {
-          const data = await response.json();
-          setTemplates(data.templates);
-        }
+        await executeNamedAsync(async () => {
+          const response = await api.taskmaster.getTemplates();
+          if (response.ok) {
+            const data = await response.json();
+            setTemplates(data.templates);
+          }
+        }, 'loading', 'template-load');
       } catch (error) {
         console.error('Error loading templates:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
     loadTemplates();
-  }, []);
+  }, [executeNamedAsync]);
 
   const handleSelectTemplate = (template) => {
     setSelectedTemplate(template);
@@ -591,39 +596,39 @@ const TemplateSelector = ({ currentProject, onClose, onTemplateApplied }) => {
   const handleApplyTemplate = async () => {
     if (!selectedTemplate || !currentProject) return;
 
-    setIsApplying(true);
     try {
-      // Apply template
-      const applyResponse = await api.taskmaster.applyTemplate(currentProject.name, {
-        templateId: selectedTemplate.id,
-        fileName,
-        customizations
-      });
+      await executeNamedAsync(async () => {
+        // Apply template
+        const applyResponse = await api.taskmaster.applyTemplate(currentProject.name, {
+          templateId: selectedTemplate.id,
+          fileName,
+          customizations
+        });
 
-      if (!applyResponse.ok) {
-        const error = await applyResponse.json();
-        throw new Error(error.message || 'Failed to apply template');
-      }
+        if (!applyResponse.ok) {
+          const error = await applyResponse.json();
+          throw new Error(error.message || 'Failed to apply template');
+        }
 
-      // Parse PRD to generate tasks
-      const parseResponse = await api.taskmaster.parsePRD(currentProject.name, {
-        fileName,
-        numTasks: 10
-      });
+        // Parse PRD to generate tasks
+        const parseResponse = await api.taskmaster.parsePRD(currentProject.name, {
+          fileName,
+          numTasks: 10
+        });
 
-      if (!parseResponse.ok) {
-        const error = await parseResponse.json();
-        throw new Error(error.message || 'Failed to generate tasks');
-      }
+        if (!parseResponse.ok) {
+          const error = await parseResponse.json();
+          throw new Error(error.message || 'Failed to generate tasks');
+        }
 
-      setStep('generate');
-      setTimeout(() => {
-        onTemplateApplied();
-      }, 2000);
+        setStep('generate');
+        setTimeout(() => {
+          onTemplateApplied();
+        }, 2000);
+      }, 'applying', 'template-apply');
     } catch (error) {
       console.error('Error applying template:', error);
       alert(`Error: ${error.message}`);
-      setIsApplying(false);
     }
   };
 

@@ -11,12 +11,17 @@ import { EditorView, Decoration } from '@codemirror/view';
 import { StateField, StateEffect, RangeSetBuilder } from '@codemirror/state';
 import { X, Save, Download, Maximize2, Minimize2, Eye, EyeOff } from 'lucide-react';
 import { api } from '../utils/api';
+import { useMultipleLoadingStates } from '../utils/hooks/useLoadingState';
 
 function CodeEditor({ file, onClose, projectPath }) {
   const [content, setContent] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  const {
+    loadingLoading: loading,
+    savingLoading: saving,
+    executeNamedAsync
+  } = useMultipleLoadingStates(['loading', 'saving']);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showDiff, setShowDiff] = useState(!!file.diffInfo);
@@ -142,23 +147,21 @@ function CodeEditor({ file, onClose, projectPath }) {
   useEffect(() => {
     const loadFileContent = async () => {
       try {
-        setLoading(true);
+        await executeNamedAsync(async () => {
+          const response = await api.readFile(file.projectName, file.path);
 
-        const response = await api.readFile(file.projectName, file.path);
+          if (!response.ok) {
+            throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
+          }
 
-        if (!response.ok) {
-          throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        setContent(data.content);
+          const data = await response.json();
+          setContent(data.content);
+        }, 'loading', 'code-file-load');
       } catch (error) {
         console.error('Error loading file:', error);
         setContent(
           `// Error loading file: ${error.message}\n// File: ${file.name}\n// Path: ${file.path}`
         );
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -181,25 +184,24 @@ function CodeEditor({ file, onClose, projectPath }) {
   }, [content, file.diffInfo, showDiff, isDarkMode]);
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      const response = await api.saveFile(file.projectName, file.path, content);
+      await executeNamedAsync(async () => {
+        const response = await api.saveFile(file.projectName, file.path, content);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Save failed: ${response.status}`);
-      }
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Save failed: ${response.status}`);
+        }
 
-      const result = await response.json();
+        const result = await response.json();
 
-      // Show success feedback
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000); // Hide after 2 seconds
+        // Show success feedback
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000); // Hide after 2 seconds
+      }, 'saving', 'code-file-save');
     } catch (error) {
       console.error('Error saving file:', error);
       alert(`Error saving file: ${error.message}`);
-    } finally {
-      setSaving(false);
     }
   };
 
