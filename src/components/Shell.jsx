@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { ClipboardAddon } from '@xterm/addon-clipboard';
-import WebglAddon from '@xterm/addon-webgl';
+import * as WebglAddonModule from '@xterm/addon-webgl';
+const WebglAddon = WebglAddonModule.default || WebglAddonModule.WebglAddon || WebglAddonModule;
 import 'xterm/css/xterm.css';
 import { api } from '../utils/api';
 
