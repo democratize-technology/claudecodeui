@@ -1415,6 +1415,21 @@ function ChatInterface({
     }
   });
 
+  // Initialize error handling for file operations
+  const fileErrorHandler = useErrorHandler({
+    defaultCategory: ERROR_CATEGORIES.FILESYSTEM,
+    defaultSeverity: ERROR_SEVERITY.MEDIUM,
+    showToast: true,
+    autoReset: true,
+    resetDelay: 3000,
+    onError: (processedError) => {
+      // Provide user feedback for file operation failures
+      if (processedError.severity >= ERROR_SEVERITY.MEDIUM) {
+        console.warn('File operation issue:', processedError.userMessage);
+      }
+    }
+  });
+
   // Enhanced storage manager with proper error handling and user feedback
   const enhancedStorageManager = useMemo(() => ({
     setItem: (key, value) => {
@@ -2948,7 +2963,10 @@ function ChatInterface({
         setFileList(flatFiles);
       }
     } catch (error) {
-      console.error('Error fetching files:', error);
+      fileErrorHandler.reportError(error, ERROR_CATEGORIES.FILESYSTEM, ERROR_SEVERITY.MEDIUM, {
+        operation: 'file_list_fetch',
+        context: 'sidebar_file_tree'
+      });
     }
   };
 
@@ -3128,7 +3146,16 @@ function ChatInterface({
       try {
         // Validate file object and properties
         if (!file || typeof file !== 'object') {
-          console.warn('Invalid file object:', file);
+          fileErrorHandler.reportError(
+            new Error('Invalid file object received'), 
+            ERROR_CATEGORIES.VALIDATION, 
+            ERROR_SEVERITY.LOW,
+            {
+              operation: 'file_validation',
+              fileType: typeof file,
+              context: 'image_upload'
+            }
+          );
           return false;
         }
 
@@ -3149,7 +3176,12 @@ function ChatInterface({
 
         return true;
       } catch (error) {
-        console.error('Error validating file:', error, file);
+        fileErrorHandler.reportError(error, ERROR_CATEGORIES.FILESYSTEM, ERROR_SEVERITY.MEDIUM, {
+          operation: 'file_validation',
+          fileName: file?.name || 'unknown',
+          fileSize: file?.size || 0,
+          context: 'image_upload_validation'
+        });
         return false;
       }
     });
