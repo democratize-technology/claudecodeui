@@ -36,6 +36,7 @@ import { useVersionCheck } from './hooks/useVersionCheck';
 import { api, authenticatedFetch } from './utils/api';
 import { deepNotEqual } from './utils/comparison';
 import safeLocalStorage from './utils/safeLocalStorage';
+import { useSimpleLoading } from './utils/hooks/useLoadingState';
 
 // Main App component with routing
 function AppContent() {
@@ -54,7 +55,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'files'
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [isLoadingProjects, setIsLoadingProjects, executeProjectsAsync] = useSimpleLoading(true);
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [showToolsSettings, setShowToolsSettings] = useState(false);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
@@ -204,9 +205,9 @@ function AppContent() {
 
   const fetchProjects = async () => {
     try {
-      setIsLoadingProjects(true);
-      const response = await api.projects();
-      const data = await response.json();
+      await executeProjectsAsync(async () => {
+        const response = await api.projects();
+        const data = await response.json();
 
       // Always fetch Cursor sessions for each project so we can combine views
       for (const project of data) {
@@ -258,10 +259,9 @@ function AppContent() {
       });
 
       // Don't auto-select any project - user should choose manually
+      });
     } catch (error) {
       console.error('Error fetching projects:', error);
-    } finally {
-      setIsLoadingProjects(false);
     }
   };
 
