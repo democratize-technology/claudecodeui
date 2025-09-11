@@ -14,18 +14,21 @@ export function useDebouncedState(initialValue, delay = 100) {
   const [debouncedValue, setDebouncedValue] = useState(initialValue);
   const timeoutRef = useRef(null);
 
-  const setDebouncedState = useCallback((newValue) => {
-    setValue(newValue);
-    
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      setDebouncedValue(newValue);
-      timeoutRef.current = null;
-    }, delay);
-  }, [delay]);
+  const setDebouncedState = useCallback(
+    (newValue) => {
+      setValue(newValue);
+
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        setDebouncedValue(newValue);
+        timeoutRef.current = null;
+      }, delay);
+    },
+    [delay]
+  );
 
   useEffect(() => {
     return () => {
@@ -47,52 +50,58 @@ export function useBatchedMessageUpdates(batchDelay = 50) {
   const timeoutRef = useRef(null);
   const [messages, setMessages] = useState([]);
 
-  const addMessage = useCallback((message) => {
-    batchRef.current.push({ type: 'add', payload: message });
-    
-    if (!timeoutRef.current) {
-      timeoutRef.current = setTimeout(() => {
-        const batch = batchRef.current;
-        batchRef.current = [];
-        timeoutRef.current = null;
-        
-        setMessages(prev => {
-          let result = [...prev];
-          batch.forEach(({ type, payload }) => {
-            if (type === 'add') {
-              result.push(payload);
-            }
-          });
-          return result;
-        });
-      }, batchDelay);
-    }
-  }, [batchDelay]);
+  const addMessage = useCallback(
+    (message) => {
+      batchRef.current.push({ type: 'add', payload: message });
 
-  const updateMessage = useCallback((index, updater) => {
-    batchRef.current.push({ type: 'update', payload: { index, updater } });
-    
-    if (!timeoutRef.current) {
-      timeoutRef.current = setTimeout(() => {
-        const batch = batchRef.current;
-        batchRef.current = [];
-        timeoutRef.current = null;
-        
-        setMessages(prev => {
-          let result = [...prev];
-          batch.forEach(({ type, payload }) => {
-            if (type === 'update') {
-              const { index, updater } = payload;
-              if (result[index]) {
-                result[index] = updater(result[index]);
+      if (!timeoutRef.current) {
+        timeoutRef.current = setTimeout(() => {
+          const batch = batchRef.current;
+          batchRef.current = [];
+          timeoutRef.current = null;
+
+          setMessages((prev) => {
+            const result = [...prev];
+            batch.forEach(({ type, payload }) => {
+              if (type === 'add') {
+                result.push(payload);
               }
-            }
+            });
+            return result;
           });
-          return result;
-        });
-      }, batchDelay);
-    }
-  }, [batchDelay]);
+        }, batchDelay);
+      }
+    },
+    [batchDelay]
+  );
+
+  const updateMessage = useCallback(
+    (index, updater) => {
+      batchRef.current.push({ type: 'update', payload: { index, updater } });
+
+      if (!timeoutRef.current) {
+        timeoutRef.current = setTimeout(() => {
+          const batch = batchRef.current;
+          batchRef.current = [];
+          timeoutRef.current = null;
+
+          setMessages((prev) => {
+            const result = [...prev];
+            batch.forEach(({ type, payload }) => {
+              if (type === 'update') {
+                const { index, updater } = payload;
+                if (result[index]) {
+                  result[index] = updater(result[index]);
+                }
+              }
+            });
+            return result;
+          });
+        }, batchDelay);
+      }
+    },
+    [batchDelay]
+  );
 
   // Cleanup function to prevent memory leaks
   useEffect(() => {
@@ -126,10 +135,11 @@ export function useJsonParser() {
 
   return useCallback((jsonString, fallback = null) => {
     if (typeof jsonString !== 'string') return fallback;
-    
+
     // Simple cache based on string hash
-    const hash = jsonString.length + jsonString.charCodeAt(0) + jsonString.charCodeAt(jsonString.length - 1);
-    
+    const hash =
+      jsonString.length + jsonString.charCodeAt(0) + jsonString.charCodeAt(jsonString.length - 1);
+
     if (parseCache.current.has(hash)) {
       return parseCache.current.get(hash);
     }
@@ -155,21 +165,24 @@ export function useJsonParser() {
  */
 export function useMessageProcessor() {
   const parseJson = useJsonParser();
-  
-  const processToolInput = useCallback((message) => {
-    if (!message.toolInput) return null;
-    
-    return parseJson(message.toolInput, message.toolInput);
-  }, [parseJson]);
+
+  const processToolInput = useCallback(
+    (message) => {
+      if (!message.toolInput) return null;
+
+      return parseJson(message.toolInput, message.toolInput);
+    },
+    [parseJson]
+  );
 
   const formatUsageLimit = useCallback((text) => {
     if (typeof text !== 'string') return text;
-    
+
     return text.replace(/Claude AI usage limit reached\|(\d{10,13})/g, (match, ts) => {
       let timestampMs = parseInt(ts, 10);
       if (!Number.isFinite(timestampMs)) return match;
       if (timestampMs < 1e12) timestampMs *= 1000;
-      
+
       const reset = new Date(timestampMs);
       const timeStr = new Intl.DateTimeFormat(undefined, {
         hour: '2-digit',
@@ -183,8 +196,21 @@ export function useMessageProcessor() {
       const offH = Math.floor(abs / 60);
       const offM = abs % 60;
       const gmt = `GMT${sign}${offH}${offM ? `:${String(offM).padStart(2, '0')}` : ''}`;
-      
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
       const dateReadable = `${reset.getDate()} ${months[reset.getMonth()]} ${reset.getFullYear()}`;
 
       return `Claude usage limit reached. Reset at **${timeStr} ${gmt}** - ${dateReadable}`;
@@ -200,7 +226,7 @@ export function useMessageProcessor() {
  */
 export function useVirtualScrolling(items, containerHeight = 600, itemHeight = 100) {
   const [scrollTop, setScrollTop] = useState(0);
-  
+
   const visibleRange = useMemo(() => {
     const startIndex = Math.floor(scrollTop / itemHeight);
     const endIndex = Math.min(
@@ -253,37 +279,40 @@ export function useOptimizedLocalStorage(key, defaultValue = null, maxItems = 50
     return defaultValue;
   });
 
-  const setStoredValue = useCallback((newValue) => {
-    try {
-      setValue(newValue);
-      
-      let valueToStore = newValue;
-      
-      // Limit array size to prevent localStorage bloat
-      if (Array.isArray(newValue) && newValue.length > maxItems) {
-        console.warn(`Truncating ${key} from ${newValue.length} to ${maxItems} items`);
-        valueToStore = newValue.slice(-maxItems);
-      }
-      
-      localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {
-      console.error(`Error setting localStorage key ${key}:`, error);
-      
-      // Fallback: try to clear some space and retry with minimal data
-      if (error.name === 'QuotaExceededError') {
-        try {
-          if (Array.isArray(newValue) && newValue.length > 10) {
-            const minimal = newValue.slice(-10);
-            localStorage.setItem(key, JSON.stringify(minimal));
-            setValue(minimal);
-            console.warn(`Saved minimal ${key} due to quota constraints`);
+  const setStoredValue = useCallback(
+    (newValue) => {
+      try {
+        setValue(newValue);
+
+        let valueToStore = newValue;
+
+        // Limit array size to prevent localStorage bloat
+        if (Array.isArray(newValue) && newValue.length > maxItems) {
+          console.warn(`Truncating ${key} from ${newValue.length} to ${maxItems} items`);
+          valueToStore = newValue.slice(-maxItems);
+        }
+
+        localStorage.setItem(key, JSON.stringify(valueToStore));
+      } catch (error) {
+        console.error(`Error setting localStorage key ${key}:`, error);
+
+        // Fallback: try to clear some space and retry with minimal data
+        if (error.name === 'QuotaExceededError') {
+          try {
+            if (Array.isArray(newValue) && newValue.length > 10) {
+              const minimal = newValue.slice(-10);
+              localStorage.setItem(key, JSON.stringify(minimal));
+              setValue(minimal);
+              console.warn(`Saved minimal ${key} due to quota constraints`);
+            }
+          } catch (retryError) {
+            console.error(`Failed to save even minimal ${key}:`, retryError);
           }
-        } catch (retryError) {
-          console.error(`Failed to save even minimal ${key}:`, retryError);
         }
       }
-    }
-  }, [key, maxItems]);
+    },
+    [key, maxItems]
+  );
 
   return [value, setStoredValue];
 }

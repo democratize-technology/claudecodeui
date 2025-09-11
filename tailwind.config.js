@@ -3,7 +3,7 @@ export default {
   darkMode: ['class'],
   content: {
     files: [
-      './index.html', 
+      './index.html',
       './src/**/*.{js,ts,jsx,tsx}',
       // Include specific paths for better purging
       './src/components/**/*.{js,jsx}',
@@ -16,11 +16,14 @@ export default {
       js: (content) => {
         // Extract classes from template literals and dynamic concatenations
         const matches = content.match(/[\w-/:]+/g) || [];
-        return matches.filter(match => 
-          // Common Tailwind patterns
-          /^(bg-|text-|border-|p-|m-|w-|h-|flex|grid|hover:|focus:|dark:|md:|lg:|xl:)/.test(match) ||
-          // Specific UI patterns used in the app
-          /^(rounded|shadow|transition|transform|opacity|scale)/.test(match)
+        return matches.filter(
+          (match) =>
+            // Common Tailwind patterns
+            /^(bg-|text-|border-|p-|m-|w-|h-|flex|grid|hover:|focus:|dark:|md:|lg:|xl:)/.test(
+              match
+            ) ||
+            // Specific UI patterns used in the app
+            /^(rounded|shadow|transition|transform|opacity|scale)/.test(match)
         );
       }
     }
@@ -28,16 +31,33 @@ export default {
   // Safelist critical classes that might be dynamically generated
   safelist: [
     // Status indicator colors
-    'bg-green-500', 'bg-red-500', 'bg-yellow-500', 'bg-blue-500',
-    'text-green-500', 'text-red-500', 'text-yellow-500', 'text-blue-500',
+    'bg-green-500',
+    'bg-red-500',
+    'bg-yellow-500',
+    'bg-blue-500',
+    'text-green-500',
+    'text-red-500',
+    'text-yellow-500',
+    'text-blue-500',
     // Loading states
-    'animate-spin', 'animate-pulse', 'animate-bounce',
+    'animate-spin',
+    'animate-pulse',
+    'animate-bounce',
     // Dynamic sizing for messages and content
-    'h-64', 'h-96', 'h-full', 'min-h-screen',
+    'h-64',
+    'h-96',
+    'h-full',
+    'min-h-screen',
     // Interactive states
-    'hover:bg-gray-100', 'hover:bg-gray-800', 'focus:ring-2', 'focus:outline-none',
+    'hover:bg-gray-100',
+    'hover:bg-gray-800',
+    'focus:ring-2',
+    'focus:outline-none',
     // Dark mode variants that might be missed
-    'dark:bg-gray-900', 'dark:bg-gray-800', 'dark:text-white', 'dark:border-gray-700'
+    'dark:bg-gray-900',
+    'dark:bg-gray-800',
+    'dark:text-white',
+    'dark:border-gray-700'
   ],
   theme: {
     container: {
@@ -116,13 +136,13 @@ export default {
   plugins: [
     require('@tailwindcss/typography'),
     // Add plugin for better performance optimizations
-    function({ addUtilities }) {
+    function ({ addUtilities }) {
       const newUtilities = {
         // Hardware acceleration utilities
         '.gpu-accelerated': {
-          'transform': 'translateZ(0)',
+          transform: 'translateZ(0)',
           'backface-visibility': 'hidden',
-          'perspective': '1000px'
+          perspective: '1000px'
         },
         // Optimized scrolling
         '.smooth-scroll': {

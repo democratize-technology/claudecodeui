@@ -117,7 +117,7 @@ export const TasksSettingsProvider = ({ children }) => {
   useEffect(() => {
     // DISABLED: TaskMaster integration disabled to prevent 401 errors
     // setTimeout(checkInstallation, 0);
-    
+
     // Set safe defaults - TaskMaster disabled
     setIsTaskMasterInstalled(false);
     setIsTaskMasterReady(false);

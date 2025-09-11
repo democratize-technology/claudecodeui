@@ -5,22 +5,22 @@
 
 // Error severity levels
 export const ERROR_SEVERITY = {
-  LOW: 'low',        // Minor issues that don't affect core functionality
-  MEDIUM: 'medium',  // Issues that affect some functionality but have fallbacks
-  HIGH: 'high',      // Critical issues that significantly impact user experience
+  LOW: 'low', // Minor issues that don't affect core functionality
+  MEDIUM: 'medium', // Issues that affect some functionality but have fallbacks
+  HIGH: 'high', // Critical issues that significantly impact user experience
   CRITICAL: 'critical' // System-breaking issues that require immediate attention
 };
 
 // Error categories for better tracking and handling
 export const ERROR_CATEGORIES = {
-  NETWORK: 'network',           // API calls, fetch failures, connection issues
-  AUTHENTICATION: 'auth',       // Login, token, permission issues
-  VALIDATION: 'validation',     // Input validation, data format issues
-  COMPONENT: 'component',       // React component failures, lazy loading
-  FILESYSTEM: 'filesystem',     // File operations, upload/download issues
-  WEBSOCKET: 'websocket',      // Real-time communication failures
+  NETWORK: 'network', // API calls, fetch failures, connection issues
+  AUTHENTICATION: 'auth', // Login, token, permission issues
+  VALIDATION: 'validation', // Input validation, data format issues
+  COMPONENT: 'component', // React component failures, lazy loading
+  FILESYSTEM: 'filesystem', // File operations, upload/download issues
+  WEBSOCKET: 'websocket', // Real-time communication failures
   EXTERNAL_SERVICE: 'external', // Third-party service failures
-  UNKNOWN: 'unknown'           // Unclassified errors
+  UNKNOWN: 'unknown' // Unclassified errors
 };
 
 // User-friendly error messages mapped to common error patterns
@@ -84,10 +84,16 @@ export const ERROR_MESSAGES = {
  * @param {Function} onUserNotify - Optional callback for user notification
  * @returns {Object} - Processed error information
  */
-export function handleError(error, category = ERROR_CATEGORIES.UNKNOWN, severity = ERROR_SEVERITY.MEDIUM, context = {}, onUserNotify = null) {
+export function handleError(
+  error,
+  category = ERROR_CATEGORIES.UNKNOWN,
+  severity = ERROR_SEVERITY.MEDIUM,
+  context = {},
+  onUserNotify = null
+) {
   // Generate unique error ID for tracking
   const errorId = `ERR_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-  
+
   // Enhanced error context
   const errorContext = {
     id: errorId,
@@ -112,7 +118,8 @@ export function handleError(error, category = ERROR_CATEGORIES.UNKNOWN, severity
   console[logLevel](`[${category.toUpperCase()}] ${severity.toUpperCase()}:`, errorContext);
 
   // Get user-friendly message
-  const userMessage = ERROR_MESSAGES[category]?.[severity] || ERROR_MESSAGES[ERROR_CATEGORIES.UNKNOWN][severity];
+  const userMessage =
+    ERROR_MESSAGES[category]?.[severity] || ERROR_MESSAGES[ERROR_CATEGORIES.UNKNOWN][severity];
 
   // Notify user if callback provided
   if (onUserNotify && typeof onUserNotify === 'function') {
@@ -146,7 +153,12 @@ export function handleError(error, category = ERROR_CATEGORIES.UNKNOWN, severity
  * @param {Object} context - Additional context
  * @returns {Promise} - Wrapped promise with error handling
  */
-export async function withErrorHandling(promise, category, severity = ERROR_SEVERITY.MEDIUM, context = {}) {
+export async function withErrorHandling(
+  promise,
+  category,
+  severity = ERROR_SEVERITY.MEDIUM,
+  context = {}
+) {
   try {
     return await promise;
   } catch (error) {
@@ -166,15 +178,10 @@ export async function withErrorHandling(promise, category, severity = ERROR_SEVE
  * @returns {Object} - Processed error for error boundary
  */
 export function processErrorBoundaryError(error, errorInfo) {
-  return handleError(
-    error,
-    ERROR_CATEGORIES.COMPONENT,
-    ERROR_SEVERITY.HIGH,
-    {
-      componentStack: errorInfo?.componentStack,
-      errorBoundary: true
-    }
-  );
+  return handleError(error, ERROR_CATEGORIES.COMPONENT, ERROR_SEVERITY.HIGH, {
+    componentStack: errorInfo?.componentStack,
+    errorBoundary: true
+  });
 }
 
 /**
@@ -185,7 +192,7 @@ export function processErrorBoundaryError(error, errorInfo) {
  */
 export function handleNetworkError(response, context = {}) {
   let severity = ERROR_SEVERITY.MEDIUM;
-  
+
   // Determine severity based on status code
   if (response.status >= 500) {
     severity = ERROR_SEVERITY.HIGH;
@@ -197,18 +204,13 @@ export function handleNetworkError(response, context = {}) {
   }
 
   const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-  
-  return handleError(
-    error,
-    context.category || ERROR_CATEGORIES.NETWORK,
-    severity,
-    {
-      ...context,
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url
-    }
-  );
+
+  return handleError(error, context.category || ERROR_CATEGORIES.NETWORK, severity, {
+    ...context,
+    status: response.status,
+    statusText: response.statusText,
+    url: response.url
+  });
 }
 
 /**
@@ -219,47 +221,42 @@ export function handleNetworkError(response, context = {}) {
  * @param {string} category - Error category for logging
  * @returns {Promise} - Promise that resolves with operation result
  */
-export async function withRetry(operation, maxRetries = 3, delay = 1000, category = ERROR_CATEGORIES.UNKNOWN) {
+export async function withRetry(
+  operation,
+  maxRetries = 3,
+  delay = 1000,
+  category = ERROR_CATEGORIES.UNKNOWN
+) {
   let lastError;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error;
-      
+
       if (attempt === maxRetries) {
-        handleError(
-          error,
-          category,
-          ERROR_SEVERITY.HIGH,
-          { 
-            operation: operation.name || 'anonymous',
-            attemptsMade: attempt,
-            maxRetries 
-          }
-        );
+        handleError(error, category, ERROR_SEVERITY.HIGH, {
+          operation: operation.name || 'anonymous',
+          attemptsMade: attempt,
+          maxRetries
+        });
         throw error;
       }
-      
+
       // Log retry attempt
-      handleError(
-        error,
-        category,
-        ERROR_SEVERITY.LOW,
-        { 
-          operation: operation.name || 'anonymous',
-          attempt,
-          maxRetries,
-          retryingIn: delay
-        }
-      );
-      
+      handleError(error, category, ERROR_SEVERITY.LOW, {
+        operation: operation.name || 'anonymous',
+        attempt,
+        maxRetries,
+        retryingIn: delay
+      });
+
       // Wait before retrying with exponential backoff
-      await new Promise(resolve => setTimeout(resolve, delay * attempt));
+      await new Promise((resolve) => setTimeout(resolve, delay * attempt));
     }
   }
-  
+
   throw lastError;
 }
 
@@ -274,15 +271,10 @@ export async function withFallback(operation, fallbackValue, category = ERROR_CA
   try {
     return await operation();
   } catch (error) {
-    handleError(
-      error,
-      category,
-      ERROR_SEVERITY.LOW,
-      { 
-        operation: operation.name || 'anonymous',
-        fallbackUsed: true
-      }
-    );
+    handleError(error, category, ERROR_SEVERITY.LOW, {
+      operation: operation.name || 'anonymous',
+      fallbackUsed: true
+    });
     return fallbackValue;
   }
 }

@@ -95,37 +95,41 @@ export const TaskMasterProvider = ({ children }) => {
     }
 
     try {
-      await executeNamedAsync(async () => {
-        clearError();
-        const projectsData = await api.get('/projects');
+      await executeNamedAsync(
+        async () => {
+          clearError();
+          const projectsData = await api.get('/projects');
 
-        // Check if projectsData is an array
-        if (!Array.isArray(projectsData)) {
-          console.error('Projects API returned non-array data:', projectsData);
-          setProjects([]);
-          return;
-        }
-
-        // Filter and enrich projects with TaskMaster data
-        const enrichedProjects = projectsData.map((project) => ({
-          ...project,
-          taskMasterConfigured: project.taskmaster?.hasTaskmaster || false,
-          taskMasterStatus: project.taskmaster?.status || 'not-configured',
-          taskCount: project.taskmaster?.metadata?.taskCount || 0,
-          completedCount: project.taskmaster?.metadata?.completed || 0
-        }));
-
-        setProjects(enrichedProjects);
-
-        // If current project is set, update its TaskMaster data
-        if (currentProject) {
-          const updatedCurrent = enrichedProjects.find((p) => p.name === currentProject.name);
-          if (updatedCurrent) {
-            setCurrentProjectState(updatedCurrent);
-            setProjectTaskMaster(updatedCurrent.taskmaster);
+          // Check if projectsData is an array
+          if (!Array.isArray(projectsData)) {
+            console.error('Projects API returned non-array data:', projectsData);
+            setProjects([]);
+            return;
           }
-        }
-      }, 'projects', 'refresh-projects');
+
+          // Filter and enrich projects with TaskMaster data
+          const enrichedProjects = projectsData.map((project) => ({
+            ...project,
+            taskMasterConfigured: project.taskmaster?.hasTaskmaster || false,
+            taskMasterStatus: project.taskmaster?.status || 'not-configured',
+            taskCount: project.taskmaster?.metadata?.taskCount || 0,
+            completedCount: project.taskmaster?.metadata?.completed || 0
+          }));
+
+          setProjects(enrichedProjects);
+
+          // If current project is set, update its TaskMaster data
+          if (currentProject) {
+            const updatedCurrent = enrichedProjects.find((p) => p.name === currentProject.name);
+            if (updatedCurrent) {
+              setCurrentProjectState(updatedCurrent);
+              setProjectTaskMaster(updatedCurrent.taskmaster);
+            }
+          }
+        },
+        'projects',
+        'refresh-projects'
+      );
     } catch (err) {
       handleError(err, 'load projects');
     }
@@ -144,7 +148,9 @@ export const TaskMasterProvider = ({ children }) => {
       // Try to fetch fresh TaskMaster detection data for the project
       if (project?.name) {
         try {
-          const detectionData = await api.get(`/taskmaster/detect/${encodeURIComponent(project.name)}`);
+          const detectionData = await api.get(
+            `/taskmaster/detect/${encodeURIComponent(project.name)}`
+          );
           setProjectTaskMaster(detectionData.taskmaster);
         } catch (error) {
           // If individual detection fails, fall back to project data from /api/projects
@@ -174,11 +180,15 @@ export const TaskMasterProvider = ({ children }) => {
     }
 
     try {
-      await executeNamedAsync(async () => {
-        clearError();
-        const mcpStatus = await api.get('/mcp-utils/taskmaster-server');
-        setMCPServerStatus(mcpStatus);
-      }, 'mcp', 'refresh-mcp-status');
+      await executeNamedAsync(
+        async () => {
+          clearError();
+          const mcpStatus = await api.get('/mcp-utils/taskmaster-server');
+          setMCPServerStatus(mcpStatus);
+        },
+        'mcp',
+        'refresh-mcp-status'
+      );
     } catch (err) {
       handleError(err, 'check MCP server status');
     }
@@ -200,22 +210,27 @@ export const TaskMasterProvider = ({ children }) => {
     }
 
     try {
-      await executeNamedAsync(async () => {
-        clearError();
+      await executeNamedAsync(
+        async () => {
+          clearError();
 
-        // Load tasks from the TaskMaster API endpoint
-        const data = await api.get(
-          `/taskmaster/tasks/${encodeURIComponent(currentProject.name)}`
-        );
+          // Load tasks from the TaskMaster API endpoint
+          const data = await api.get(
+            `/taskmaster/tasks/${encodeURIComponent(currentProject.name)}`
+          );
 
-        setTasks(data.tasks || []);
+          setTasks(data.tasks || []);
 
-        // Find next task (pending or in-progress)
-        const nextTask =
-          data.tasks?.find((task) => task.status === 'pending' || task.status === 'in-progress') ||
-          null;
-        setNextTask(nextTask);
-      }, 'tasks', 'refresh-tasks');
+          // Find next task (pending or in-progress)
+          const nextTask =
+            data.tasks?.find(
+              (task) => task.status === 'pending' || task.status === 'in-progress'
+            ) || null;
+          setNextTask(nextTask);
+        },
+        'tasks',
+        'refresh-tasks'
+      );
     } catch (err) {
       console.error('Error loading tasks:', err);
       handleError(err, 'load tasks');

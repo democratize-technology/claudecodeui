@@ -1,6 +1,6 @@
 /**
  * Jest Configuration for UI Regression Tests
- * 
+ *
  * Optimized configuration specifically for regression testing to ensure
  * critical UI bugs don't return. Includes performance monitoring,
  * visual regression detection, and comprehensive coverage tracking.
@@ -10,7 +10,7 @@
 export default {
   // Extend base config
   preset: './jest.config.js',
-  
+
   // Test environment optimized for UI testing
   testEnvironment: 'jsdom',
   testEnvironmentOptions: {
@@ -35,7 +35,8 @@ export default {
   // Module name mapping with additional mocks for stability
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': 'jest-transform-stub',
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$':
+      'jest-transform-stub',
     // Mock WebSocket for integration tests
     '^ws$': '<rootDir>/src/__tests__/mocks/websocket-mock.js'
   },
@@ -100,11 +101,11 @@ export default {
   // Performance and timeout settings
   testTimeout: 30000, // Longer timeout for performance tests
   maxWorkers: '50%', // Use half the available cores for stability
-  
+
   // Error handling
   bail: 0, // Don't bail on first failure - run all regression tests
   verbose: true,
-  
+
   // Reporters for CI/CD integration
   reporters: [
     'default',

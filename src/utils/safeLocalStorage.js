@@ -1,7 +1,7 @@
 /**
  * Safe localStorage wrapper that prevents crashes in private browsing mode
  * and handles JSON parsing errors gracefully.
- * 
+ *
  * In private browsing mode, localStorage access throws DOMException,
  * which can crash the entire React app if not properly handled.
  */
@@ -18,7 +18,10 @@ class SafeLocalStorage {
       localStorage.removeItem(test);
       return true;
     } catch (error) {
-      console.warn('localStorage unavailable (private browsing mode or storage disabled):', error.message);
+      console.warn(
+        'localStorage unavailable (private browsing mode or storage disabled):',
+        error.message
+      );
       return false;
     }
   }
@@ -93,7 +96,7 @@ class SafeLocalStorage {
    */
   getJSON(key, fallback = null) {
     const stored = this.getItem(key);
-    
+
     if (stored === null) {
       return fallback;
     }
@@ -164,12 +167,4 @@ const safeLocalStorage = new SafeLocalStorage();
 export default safeLocalStorage;
 
 // Named exports for convenience
-export const {
-  getItem,
-  setItem,
-  removeItem,
-  getJSON,
-  setJSON,
-  clear,
-  keys
-} = safeLocalStorage;
+export const { getItem, setItem, removeItem, getJSON, setJSON, clear, keys } = safeLocalStorage;

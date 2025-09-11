@@ -20,11 +20,12 @@ const handleApiResponse = async (response, options = {}) => {
     } catch {
       // Ignore JSON parse errors, use fallback
     }
-    
-    const message = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+
+    const message =
+      errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
     throw new ApiError(response.status, message, errorData);
   }
-  
+
   // Return raw response if requested, otherwise parse JSON
   return options.raw ? response : response.json();
 };
@@ -57,7 +58,7 @@ export const authenticatedFetch = async (url, options = {}) => {
 
 // API endpoints
 export const api = {
-  // Auth endpoints (no token required) 
+  // Auth endpoints (no token required)
   auth: {
     status: async () => {
       const response = await fetch('/api/auth/status');
@@ -180,7 +181,7 @@ export const api = {
     },
     cli: {
       list: () => authenticatedFetch('/api/mcp/cli/list'),
-      add: (serverData) => 
+      add: (serverData) =>
         authenticatedFetch('/api/mcp/cli/add', {
           method: 'POST',
           body: JSON.stringify(serverData)

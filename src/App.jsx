@@ -58,7 +58,7 @@ function AppContent() {
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoadingProjects, setIsLoadingProjects, executeProjectsAsync] = useSimpleLoading(true);
-  
+
   // Initialize error handling for project operations
   const projectErrorHandler = useErrorHandler({
     defaultCategory: ERROR_CATEGORIES.NETWORK,
@@ -221,65 +221,65 @@ function AppContent() {
         const response = await api.projects();
         const data = await response.json();
 
-      // Always fetch Cursor sessions for each project so we can combine views
-      for (const project of data) {
-        try {
-          const url = `/api/cursor/sessions?projectPath=${encodeURIComponent(project.fullPath || project.path)}`;
-          const cursorResponse = await authenticatedFetch(url);
-          if (cursorResponse.ok) {
-            const cursorData = await cursorResponse.json();
-            if (cursorData.success && cursorData.sessions) {
-              project.cursorSessions = cursorData.sessions;
+        // Always fetch Cursor sessions for each project so we can combine views
+        for (const project of data) {
+          try {
+            const url = `/api/cursor/sessions?projectPath=${encodeURIComponent(project.fullPath || project.path)}`;
+            const cursorResponse = await authenticatedFetch(url);
+            if (cursorResponse.ok) {
+              const cursorData = await cursorResponse.json();
+              if (cursorData.success && cursorData.sessions) {
+                project.cursorSessions = cursorData.sessions;
+              } else {
+                project.cursorSessions = [];
+              }
             } else {
               project.cursorSessions = [];
             }
-          } else {
+          } catch (error) {
+            projectErrorHandler.reportError(
+              error,
+              ERROR_CATEGORIES.EXTERNAL_SERVICE,
+              ERROR_SEVERITY.LOW,
+              {
+                operation: 'cursor_session_fetch',
+                projectName: project.name,
+                fallbackUsed: true
+              }
+            );
             project.cursorSessions = [];
           }
-        } catch (error) {
-          projectErrorHandler.reportError(
-            error, 
-            ERROR_CATEGORIES.EXTERNAL_SERVICE, 
-            ERROR_SEVERITY.LOW,
-            {
-              operation: 'cursor_session_fetch',
-              projectName: project.name,
-              fallbackUsed: true
-            }
-          );
-          project.cursorSessions = [];
-        }
-      }
-
-      // Optimize to preserve object references when data hasn't changed
-      setProjects((prevProjects) => {
-        // If no previous projects, just set the new data
-        if (prevProjects.length === 0) {
-          return data;
         }
 
-        // Check if the projects data has actually changed
-        const hasChanges =
-          data.some((newProject, index) => {
-            const prevProject = prevProjects[index];
-            if (!prevProject) return true;
+        // Optimize to preserve object references when data hasn't changed
+        setProjects((prevProjects) => {
+          // If no previous projects, just set the new data
+          if (prevProjects.length === 0) {
+            return data;
+          }
 
-            // Compare key properties that would affect UI
-            return (
-              newProject.name !== prevProject.name ||
-              newProject.displayName !== prevProject.displayName ||
-              newProject.fullPath !== prevProject.fullPath ||
-              deepNotEqual(newProject.sessionMeta, prevProject.sessionMeta) ||
-              deepNotEqual(newProject.sessions, prevProject.sessions) ||
-              deepNotEqual(newProject.cursorSessions, prevProject.cursorSessions)
-            );
-          }) || data.length !== prevProjects.length;
+          // Check if the projects data has actually changed
+          const hasChanges =
+            data.some((newProject, index) => {
+              const prevProject = prevProjects[index];
+              if (!prevProject) return true;
 
-        // Only update if there are actual changes
-        return hasChanges ? data : prevProjects;
-      });
+              // Compare key properties that would affect UI
+              return (
+                newProject.name !== prevProject.name ||
+                newProject.displayName !== prevProject.displayName ||
+                newProject.fullPath !== prevProject.fullPath ||
+                deepNotEqual(newProject.sessionMeta, prevProject.sessionMeta) ||
+                deepNotEqual(newProject.sessions, prevProject.sessions) ||
+                deepNotEqual(newProject.cursorSessions, prevProject.cursorSessions)
+              );
+            }) || data.length !== prevProjects.length;
 
-      // Don't auto-select any project - user should choose manually
+          // Only update if there are actual changes
+          return hasChanges ? data : prevProjects;
+        });
+
+        // Don't auto-select any project - user should choose manually
       });
     });
   };
@@ -423,10 +423,7 @@ function AppContent() {
             const refreshedSession = refreshedProject.sessions?.find(
               (s) => s.id === selectedSession.id
             );
-            if (
-              refreshedSession &&
-              deepNotEqual(refreshedSession, selectedSession)
-            ) {
+            if (refreshedSession && deepNotEqual(refreshedSession, selectedSession)) {
               setSelectedSession(refreshedSession);
             }
           }

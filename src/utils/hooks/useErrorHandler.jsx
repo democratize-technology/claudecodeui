@@ -33,164 +33,175 @@ export function useErrorHandler(options = {}) {
   }, []);
 
   // Handle error with standardized processing
-  const reportError = useCallback((
-    err, 
-    category = defaultCategory, 
-    severity = defaultSeverity, 
-    context = {}
-  ) => {
-    const processedError = handleError(
-      err,
-      category,
-      severity,
-      {
-        ...context,
-        component: context.component || 'useErrorHandler',
-        retryCount
-      },
-      showToast ? (errorInfo) => {
-        // Toast notification would go here if toast system is available
-        console.info('Error toast:', errorInfo);
-      } : null
-    );
+  const reportError = useCallback(
+    (err, category = defaultCategory, severity = defaultSeverity, context = {}) => {
+      const processedError = handleError(
+        err,
+        category,
+        severity,
+        {
+          ...context,
+          component: context.component || 'useErrorHandler',
+          retryCount
+        },
+        showToast
+          ? (errorInfo) => {
+              // Toast notification would go here if toast system is available
+              console.info('Error toast:', errorInfo);
+            }
+          : null
+      );
 
-    setError(processedError);
-    
-    // Call custom error handler if provided
-    if (onError && typeof onError === 'function') {
-      onError(processedError);
-    }
+      setError(processedError);
 
-    // Auto-reset after delay if enabled
-    if (autoReset && resetDelay > 0) {
-      setTimeout(() => {
-        setError(null);
-      }, resetDelay);
-    }
+      // Call custom error handler if provided
+      if (onError && typeof onError === 'function') {
+        onError(processedError);
+      }
 
-    return processedError;
-  }, [defaultCategory, defaultSeverity, onError, showToast, autoReset, resetDelay, retryCount]);
+      // Auto-reset after delay if enabled
+      if (autoReset && resetDelay > 0) {
+        setTimeout(() => {
+          setError(null);
+        }, resetDelay);
+      }
+
+      return processedError;
+    },
+    [defaultCategory, defaultSeverity, onError, showToast, autoReset, resetDelay, retryCount]
+  );
 
   // Async operation wrapper with loading and error states
-  const executeAsync = useCallback(async (
-    operation,
-    category = defaultCategory,
-    severity = defaultSeverity,
-    context = {}
-  ) => {
-    try {
-      setIsLoading(true);
-      if (autoReset) {
-        resetError();
-      }
+  const executeAsync = useCallback(
+    async (operation, category = defaultCategory, severity = defaultSeverity, context = {}) => {
+      try {
+        setIsLoading(true);
+        if (autoReset) {
+          resetError();
+        }
 
-      const result = await operation();
-      
-      // Reset error on successful operation
-      if (autoReset && error) {
-        resetError();
+        const result = await operation();
+
+        // Reset error on successful operation
+        if (autoReset && error) {
+          resetError();
+        }
+
+        return result;
+      } catch (err) {
+        const processedError = reportError(err, category, severity, {
+          ...context,
+          operation: operation.name || 'async operation'
+        });
+
+        // Re-throw with processed error info for upstream handling
+        const enhancedError = new Error(processedError.userMessage);
+        enhancedError.processedError = processedError;
+        throw enhancedError;
+      } finally {
+        setIsLoading(false);
       }
-      
-      return result;
-    } catch (err) {
-      const processedError = reportError(err, category, severity, {
-        ...context,
-        operation: operation.name || 'async operation'
-      });
-      
-      // Re-throw with processed error info for upstream handling
-      const enhancedError = new Error(processedError.userMessage);
-      enhancedError.processedError = processedError;
-      throw enhancedError;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [defaultCategory, defaultSeverity, autoReset, error, reportError, resetError]);
+    },
+    [defaultCategory, defaultSeverity, autoReset, error, reportError, resetError]
+  );
 
   // Retry last failed operation
-  const retry = useCallback(async (operation) => {
-    if (!operation) {
-      console.warn('No operation provided to retry');
-      return;
-    }
+  const retry = useCallback(
+    async (operation) => {
+      if (!operation) {
+        console.warn('No operation provided to retry');
+        return;
+      }
 
-    setRetryCount(prev => prev + 1);
-    return executeAsync(operation, defaultCategory, defaultSeverity, {
-      isRetry: true,
-      retryAttempt: retryCount + 1
-    });
-  }, [executeAsync, defaultCategory, defaultSeverity, retryCount]);
+      setRetryCount((prev) => prev + 1);
+      return executeAsync(operation, defaultCategory, defaultSeverity, {
+        isRetry: true,
+        retryAttempt: retryCount + 1
+      });
+    },
+    [executeAsync, defaultCategory, defaultSeverity, retryCount]
+  );
 
   // Graceful operation with fallback
-  const executeWithFallback = useCallback(async (
-    operation,
-    fallbackValue,
-    category = defaultCategory
-  ) => {
-    try {
-      return await executeAsync(operation, category, ERROR_SEVERITY.LOW, {
-        hasFallback: true
-      });
-    } catch (err) {
-      reportError(err, category, ERROR_SEVERITY.LOW, {
-        operation: operation.name || 'fallback operation',
-        fallbackUsed: true
-      });
-      return fallbackValue;
-    }
-  }, [executeAsync, reportError, defaultCategory]);
+  const executeWithFallback = useCallback(
+    async (operation, fallbackValue, category = defaultCategory) => {
+      try {
+        return await executeAsync(operation, category, ERROR_SEVERITY.LOW, {
+          hasFallback: true
+        });
+      } catch (err) {
+        reportError(err, category, ERROR_SEVERITY.LOW, {
+          operation: operation.name || 'fallback operation',
+          fallbackUsed: true
+        });
+        return fallbackValue;
+      }
+    },
+    [executeAsync, reportError, defaultCategory]
+  );
 
   // Network request wrapper with standard error handling
-  const fetchWithErrorHandling = useCallback(async (url, options = {}) => {
-    return executeAsync(async () => {
-      const response = await fetch(url, options);
-      
-      if (!response.ok) {
-        // Create error with response details
-        const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
-        error.response = response;
-        error.status = response.status;
-        throw error;
-      }
-      
-      return response;
-    }, ERROR_CATEGORIES.NETWORK, ERROR_SEVERITY.MEDIUM, {
-      url,
-      method: options.method || 'GET',
-      status: 'pending'
-    });
-  }, [executeAsync]);
+  const fetchWithErrorHandling = useCallback(
+    async (url, options = {}) => {
+      return executeAsync(
+        async () => {
+          const response = await fetch(url, options);
+
+          if (!response.ok) {
+            // Create error with response details
+            const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+            error.response = response;
+            error.status = response.status;
+            throw error;
+          }
+
+          return response;
+        },
+        ERROR_CATEGORIES.NETWORK,
+        ERROR_SEVERITY.MEDIUM,
+        {
+          url,
+          method: options.method || 'GET',
+          status: 'pending'
+        }
+      );
+    },
+    [executeAsync]
+  );
 
   // Component-safe error boundary simulator
-  const safeExecute = useCallback((operation, fallback = null) => {
-    try {
-      return operation();
-    } catch (err) {
-      reportError(err, ERROR_CATEGORIES.COMPONENT, ERROR_SEVERITY.MEDIUM, {
-        component: 'safeExecute',
-        operation: operation.name || 'component operation'
-      });
-      return fallback;
-    }
-  }, [reportError]);
+  const safeExecute = useCallback(
+    (operation, fallback = null) => {
+      try {
+        return operation();
+      } catch (err) {
+        reportError(err, ERROR_CATEGORIES.COMPONENT, ERROR_SEVERITY.MEDIUM, {
+          component: 'safeExecute',
+          operation: operation.name || 'component operation'
+        });
+        return fallback;
+      }
+    },
+    [reportError]
+  );
 
   return {
     // Error state
     error,
     isLoading,
     retryCount,
-    
+
     // Error management
     reportError,
     resetError,
     retry,
-    
+
     // Operation wrappers
     executeAsync,
     executeWithFallback,
     fetchWithErrorHandling,
     safeExecute,
-    
+
     // Convenience properties
     hasError: !!error,
     canRetry: error?.shouldRetry ?? false,
@@ -209,13 +220,8 @@ export function useErrorHandler(options = {}) {
 export function withErrorHandler(WrappedComponent, errorHandlerOptions = {}) {
   return function ErrorHandledComponent(props) {
     const errorHandler = useErrorHandler(errorHandlerOptions);
-    
-    return (
-      <WrappedComponent
-        {...props}
-        errorHandler={errorHandler}
-      />
-    );
+
+    return <WrappedComponent {...props} errorHandler={errorHandler} />;
   };
 }
 
@@ -234,14 +240,14 @@ export function useFormErrorHandler(options = {}) {
   const [fieldErrors, setFieldErrors] = useState({});
 
   const setFieldError = useCallback((field, error) => {
-    setFieldErrors(prev => ({
+    setFieldErrors((prev) => ({
       ...prev,
       [field]: error
     }));
   }, []);
 
   const clearFieldError = useCallback((field) => {
-    setFieldErrors(prev => {
+    setFieldErrors((prev) => {
       const updated = { ...prev };
       delete updated[field];
       return updated;
@@ -252,26 +258,29 @@ export function useFormErrorHandler(options = {}) {
     setFieldErrors({});
   }, []);
 
-  const validateField = useCallback((field, value, validator) => {
-    try {
-      const result = validator(value);
-      if (result !== true) {
-        setFieldError(field, result);
+  const validateField = useCallback(
+    (field, value, validator) => {
+      try {
+        const result = validator(value);
+        if (result !== true) {
+          setFieldError(field, result);
+          return false;
+        }
+        clearFieldError(field);
+        return true;
+      } catch (error) {
+        const processedError = baseHandler.reportError(
+          error,
+          ERROR_CATEGORIES.VALIDATION,
+          ERROR_SEVERITY.LOW,
+          { field, value: typeof value === 'string' ? value.substring(0, 50) : typeof value }
+        );
+        setFieldError(field, processedError.userMessage);
         return false;
       }
-      clearFieldError(field);
-      return true;
-    } catch (error) {
-      const processedError = baseHandler.reportError(
-        error,
-        ERROR_CATEGORIES.VALIDATION,
-        ERROR_SEVERITY.LOW,
-        { field, value: typeof value === 'string' ? value.substring(0, 50) : typeof value }
-      );
-      setFieldError(field, processedError.userMessage);
-      return false;
-    }
-  }, [baseHandler, setFieldError, clearFieldError]);
+    },
+    [baseHandler, setFieldError, clearFieldError]
+  );
 
   return {
     ...baseHandler,
