@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
-import { ClipboardAddon } from '@xterm/addon-clipboard';
+import * as XtermModule from 'xterm';
+const Terminal = XtermModule.default || XtermModule.Terminal || XtermModule;
+import * as FitAddonModule from 'xterm-addon-fit';
+const FitAddon = FitAddonModule.default || FitAddonModule.FitAddon || FitAddonModule;
+import * as ClipboardAddonModule from '@xterm/addon-clipboard';
+const ClipboardAddon = ClipboardAddonModule.default || ClipboardAddonModule.ClipboardAddon || ClipboardAddonModule;
 import * as WebglAddonModule from '@xterm/addon-webgl';
 const WebglAddon = WebglAddonModule.default || WebglAddonModule.WebglAddon || WebglAddonModule;
 import 'xterm/css/xterm.css';

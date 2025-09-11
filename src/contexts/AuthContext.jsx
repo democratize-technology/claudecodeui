@@ -40,11 +40,6 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
-  // Check authentication status on mount
-  useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
-
   const checkAuthStatus = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -102,7 +97,12 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [token, errorHandler]);
+  }, [token]);
+
+  // Check authentication status on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   const login = async (username, password) => {
     try {
