@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 const ThemeContext = createContext();
 
@@ -50,7 +51,7 @@ export const ThemeProvider = ({ children }) => {
 
       // FALLBACK: Original theme detection logic
       // Check localStorage first
-      const savedTheme = localStorage.getItem('theme');
+      const savedTheme = safeLocalStorage.getItem('theme');
       if (savedTheme) {
         const prefersDark = savedTheme === 'dark';
         setIsDarkMode(prefersDark);
@@ -86,7 +87,7 @@ export const ThemeProvider = ({ children }) => {
     try {
       if (isDarkMode) {
         document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
+        safeLocalStorage.setItem('theme', 'dark');
 
         // Update iOS status bar style and theme color for dark mode
         const statusBarMeta = document.querySelector(
@@ -102,7 +103,7 @@ export const ThemeProvider = ({ children }) => {
         }
       } else {
         document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
+        safeLocalStorage.setItem('theme', 'light');
 
         // Update iOS status bar style and theme color for light mode
         const statusBarMeta = document.querySelector(
@@ -130,7 +131,7 @@ export const ThemeProvider = ({ children }) => {
     const handleChange = (e) => {
       try {
         // Only update if user hasn't manually set a preference
-        const savedTheme = localStorage.getItem('theme');
+        const savedTheme = safeLocalStorage.getItem('theme');
         if (!savedTheme) {
           setIsDarkMode(e.matches);
         }

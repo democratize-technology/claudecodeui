@@ -1,4 +1,4 @@
-import React from 'react';
+;
 import { X, Sparkles } from 'lucide-react';
 
 const CreateTaskModal = ({ currentProject, onClose, onTaskCreated }) => {

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useErrorHandler } from '../utils/hooks/useErrorHandler.jsx';
-import { ERROR_CATEGORIES, ERROR_SEVERITY } from '../utils/errorHandling';
+import { ERROR_CATEGORIES, ERROR_SEVERITY } from '../utils/errorHandling.jsx';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 const TasksSettingsContext = createContext({
   tasksEnabled: true,
@@ -23,7 +24,7 @@ export const useTasksSettings = () => {
 export const TasksSettingsProvider = ({ children }) => {
   const [tasksEnabled, setTasksEnabled] = useState(() => {
     // Load from localStorage on initialization
-    const saved = localStorage.getItem('tasks-enabled');
+    const saved = safeLocalStorage.getItem('tasks-enabled');
     return saved !== null ? JSON.parse(saved) : true; // Default to true
   });
 
@@ -47,7 +48,7 @@ export const TasksSettingsProvider = ({ children }) => {
 
   // Save to localStorage whenever tasksEnabled changes
   useEffect(() => {
-    localStorage.setItem('tasks-enabled', JSON.stringify(tasksEnabled));
+    safeLocalStorage.setJSON('tasks-enabled', tasksEnabled);
   }, [tasksEnabled]);
 
   // Check TaskMaster installation status asynchronously on component mount
@@ -79,7 +80,7 @@ export const TasksSettingsProvider = ({ children }) => {
 
       // If TaskMaster is not installed and user hasn't explicitly enabled tasks,
       // disable tasks automatically
-      const userEnabledTasks = localStorage.getItem('tasks-enabled');
+      const userEnabledTasks = safeLocalStorage.getItem('tasks-enabled');
       if (!installationData.installation?.isInstalled && !userEnabledTasks) {
         setTasksEnabled(false);
       }

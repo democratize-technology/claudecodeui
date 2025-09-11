@@ -35,6 +35,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { useVersionCheck } from './hooks/useVersionCheck';
 import { api, authenticatedFetch } from './utils/api';
 import { deepNotEqual } from './utils/comparison';
+import safeLocalStorage from './utils/safeLocalStorage';
 
 // Main App component with routing
 function AppContent() {
@@ -58,20 +59,16 @@ function AppContent() {
   const [showToolsSettings, setShowToolsSettings] = useState(false);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
   const [autoExpandTools, setAutoExpandTools] = useState(() => {
-    const saved = localStorage.getItem('autoExpandTools');
-    return saved !== null ? JSON.parse(saved) : false;
+    return safeLocalStorage.getJSON('autoExpandTools', false);
   });
   const [showRawParameters, setShowRawParameters] = useState(() => {
-    const saved = localStorage.getItem('showRawParameters');
-    return saved !== null ? JSON.parse(saved) : false;
+    return safeLocalStorage.getJSON('showRawParameters', false);
   });
   const [autoScrollToBottom, setAutoScrollToBottom] = useState(() => {
-    const saved = localStorage.getItem('autoScrollToBottom');
-    return saved !== null ? JSON.parse(saved) : true;
+    return safeLocalStorage.getJSON('autoScrollToBottom', true);
   });
   const [sendByCtrlEnter, setSendByCtrlEnter] = useState(() => {
-    const saved = localStorage.getItem('sendByCtrlEnter');
-    return saved !== null ? JSON.parse(saved) : false;
+    return safeLocalStorage.getJSON('sendByCtrlEnter', false);
   });
   // Session Protection System: Track sessions with active conversations to prevent
   // automatic project updates from interrupting ongoing chats. When a user sends
@@ -325,7 +322,7 @@ function AppContent() {
 
     // For Cursor sessions, we need to set the session ID differently
     // since they're persistent and not created by Claude
-    const provider = localStorage.getItem('selected-provider') || 'claude';
+    const provider = safeLocalStorage.getItem('selected-provider', 'claude');
     if (provider === 'cursor') {
       // Cursor sessions have persistent IDs
       sessionStorage.setItem('cursorSessionId', session.id);
@@ -700,22 +697,22 @@ function AppContent() {
           autoExpandTools={autoExpandTools}
           onAutoExpandChange={(value) => {
             setAutoExpandTools(value);
-            localStorage.setItem('autoExpandTools', JSON.stringify(value));
+            safeLocalStorage.setJSON('autoExpandTools', value);
           }}
           showRawParameters={showRawParameters}
           onShowRawParametersChange={(value) => {
             setShowRawParameters(value);
-            localStorage.setItem('showRawParameters', JSON.stringify(value));
+            safeLocalStorage.setJSON('showRawParameters', value);
           }}
           autoScrollToBottom={autoScrollToBottom}
           onAutoScrollChange={(value) => {
             setAutoScrollToBottom(value);
-            localStorage.setItem('autoScrollToBottom', JSON.stringify(value));
+            safeLocalStorage.setJSON('autoScrollToBottom', value);
           }}
           sendByCtrlEnter={sendByCtrlEnter}
           onSendByCtrlEnterChange={(value) => {
             setSendByCtrlEnter(value);
-            localStorage.setItem('sendByCtrlEnter', JSON.stringify(value));
+            safeLocalStorage.setJSON('sendByCtrlEnter', value);
           }}
           isMobile={isMobile}
         />

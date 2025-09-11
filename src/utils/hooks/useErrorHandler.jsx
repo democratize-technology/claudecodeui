@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useState } from 'react';
-import { handleError, ERROR_CATEGORIES, ERROR_SEVERITY } from '../errorHandling';
+import { handleError, ERROR_CATEGORIES, ERROR_SEVERITY } from '../errorHandling.jsx';
 
 /**
  * Hook for handling errors in React components with consistent UI feedback

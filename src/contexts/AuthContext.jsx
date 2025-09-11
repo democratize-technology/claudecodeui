@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useErrorHandler } from '../utils/hooks/useErrorHandler.jsx';
-import { ERROR_CATEGORIES, ERROR_SEVERITY, withRetry } from '../utils/errorHandling';
+import { ERROR_CATEGORIES, ERROR_SEVERITY, withRetry } from '../utils/errorHandling.jsx';
+import safeLocalStorage from '../utils/safeLocalStorage';
 
 const AuthContext = createContext({
   user: null,
@@ -23,7 +24,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('auth-token'));
+  const [token, setToken] = useState(safeLocalStorage.getItem('auth-token'));
   const [isLoading, setIsLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [error, setError] = useState(null);
@@ -88,7 +89,7 @@ export const AuthProvider = ({ children }) => {
             operation: 'token verification',
             action: 'clearing_token'
           });
-          localStorage.removeItem('auth-token');
+          safeLocalStorage.removeItem('auth-token');
           setToken(null);
           setUser(null);
         }
@@ -133,7 +134,7 @@ export const AuthProvider = ({ children }) => {
       // Success case
       setToken(data.token);
       setUser(data.user);
-      localStorage.setItem('auth-token', data.token);
+      safeLocalStorage.setItem('auth-token', data.token);
       return { success: true };
     } catch (error) {
       let severity = ERROR_SEVERITY.HIGH;
@@ -198,7 +199,7 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       setUser(data.user);
       setNeedsSetup(false);
-      localStorage.setItem('auth-token', data.token);
+      safeLocalStorage.setItem('auth-token', data.token);
       return { success: true };
     } catch (error) {
       let severity = ERROR_SEVERITY.HIGH;
@@ -233,7 +234,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('auth-token');
+    safeLocalStorage.removeItem('auth-token');
     errorHandler.resetError();
 
     // Optional: Call logout endpoint for logging (non-critical operation)

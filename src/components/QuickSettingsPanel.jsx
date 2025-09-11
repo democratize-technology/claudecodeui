@@ -9,7 +9,6 @@ import {
   Sun,
   ArrowDown,
   Mic,
-  Brain,
   Sparkles,
   FileText,
   Languages

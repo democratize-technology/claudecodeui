@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   X,
   Flag,
-  User,
   ArrowRight,
   CheckCircle,
   Circle,

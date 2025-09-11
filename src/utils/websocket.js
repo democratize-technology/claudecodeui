@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from './api';
+import safeLocalStorage from './safeLocalStorage';
 
 export function useWebSocket() {
   const [ws, setWs] = useState(null);
@@ -42,7 +43,7 @@ export function useWebSocket() {
       }
 
       // Get authentication token
-      const token = localStorage.getItem('auth-token');
+      const token = safeLocalStorage.getItem('auth-token');
       if (!token) {
         console.warn('No authentication token found for WebSocket connection');
         return;

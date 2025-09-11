@@ -1,6 +1,8 @@
+import safeLocalStorage from './safeLocalStorage';
+
 // Utility function for authenticated API calls
 export const authenticatedFetch = (url, options = {}) => {
-  const token = localStorage.getItem('auth-token');
+  const token = safeLocalStorage.getItem('auth-token');
 
   const defaultHeaders = {};
 

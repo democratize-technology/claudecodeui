@@ -1,4 +1,4 @@
-import React from 'react';
+;
 
 function PermissionModeSelector({ mode, onModeChange, className = '' }) {
   // Mode configuration with styling and labels

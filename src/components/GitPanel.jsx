@@ -3,7 +3,6 @@ import {
   GitBranch,
   GitCommit,
   Plus,
-  Minus,
   RefreshCw,
   Check,
   X,
@@ -12,16 +11,13 @@ import {
   Info,
   History,
   FileText,
-  Mic,
-  MicOff,
   Sparkles,
   Download,
-  RotateCcw,
   Trash2,
   AlertTriangle,
   Upload
 } from 'lucide-react';
-import { MicButton } from './MicButton.jsx';
+import { Button } from './ui/button.jsx';
 import { authenticatedFetch } from '../utils/api';
 
 function GitPanel({ selectedProject, isMobile }) {
@@ -1235,7 +1231,7 @@ function GitPanel({ selectedProject, isMobile }) {
                             )}
                           </button>
                           <div style={{ display: 'none' }}>
-                            <MicButton
+                            <Button
                               onTranscript={(transcript) => setCommitMessage(transcript)}
                               mode='default'
                               className='p-1.5'

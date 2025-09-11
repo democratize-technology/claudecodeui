@@ -27,6 +27,7 @@ import { useTasksSettings } from '../contexts/TasksSettingsContext';
 
 import ClaudeStatus from './ClaudeStatus';
 import PermissionModeSelector from './PermissionModeSelector';
+import safeLocalStorage from '../utils/safeLocalStorage';
 import { MicButton } from './MicButton.jsx';
 import { api, authenticatedFetch } from '../utils/api';
 
@@ -86,8 +87,8 @@ function formatUsageLimitText(text) {
   }
 }
 
-// Safe localStorage utility to handle quota exceeded errors
-const safeLocalStorage = {
+// Chat-specific localStorage manager with quota handling and message truncation
+const chatStorageManager = {
   setItem: (key, value) => {
     try {
       // For chat messages, implement compression and size limits
@@ -264,7 +265,7 @@ const MessageComponent = memo(
                   </div>
                 ) : (
                   <div className='w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1'>
-                    {(localStorage.getItem('selected-provider') || 'claude') === 'cursor' ? (
+                    {(safeLocalStorage.getItem('selected-provider', 'claude')) === 'cursor' ? (
                       <CursorLogo className='w-full h-full' />
                     ) : (
                       <ClaudeLogo className='w-full h-full' />
@@ -276,7 +277,7 @@ const MessageComponent = memo(
                     ? 'Error'
                     : message.type === 'tool'
                       ? 'Tool'
-                      : (localStorage.getItem('selected-provider') || 'claude') === 'cursor'
+                      : (safeLocalStorage.getItem('selected-provider', 'claude')) === 'cursor'
                         ? 'Cursor'
                         : 'Claude'}
                 </div>
@@ -1459,13 +1460,13 @@ function ChatInterface({
   const { tasksEnabled } = useTasksSettings();
   const [input, setInput] = useState(() => {
     if (typeof window !== 'undefined' && selectedProject) {
-      return safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
+      return chatStorageManager.getItem(`draft_input_${selectedProject.name}`) || '';
     }
     return '';
   });
   const [chatMessages, setChatMessages] = useState(() => {
     if (typeof window !== 'undefined' && selectedProject) {
-      const saved = safeLocalStorage.getItem(`chat_messages_${selectedProject.name}`);
+      const saved = chatStorageManager.getItem(`chat_messages_${selectedProject.name}`);
       return saved ? JSON.parse(saved) : [];
     }
     return [];
@@ -1526,16 +1527,16 @@ function ChatInterface({
   const [visibleMessageCount, setVisibleMessageCount] = useState(100);
   const [claudeStatus, setClaudeStatus] = useState(null);
   const [provider, setProvider] = useState(() => {
-    return localStorage.getItem('selected-provider') || 'claude';
+    return safeLocalStorage.getItem('selected-provider', 'claude');
   });
   const [cursorModel, setCursorModel] = useState(() => {
-    return localStorage.getItem('cursor-model') || 'gpt-5';
+    return safeLocalStorage.getItem('cursor-model', 'gpt-5');
   });
   // When selecting a session from Sidebar, auto-switch provider to match session's origin
   useEffect(() => {
     if (selectedSession && selectedSession.__provider && selectedSession.__provider !== provider) {
       setProvider(selectedSession.__provider);
-      localStorage.setItem('selected-provider', selectedSession.__provider);
+      safeLocalStorage.setItem('selected-provider', selectedSession.__provider);
     }
   }, [selectedSession]);
 
@@ -1555,7 +1556,7 @@ function ChatInterface({
               'opus-4.1': 'opus-4.1'
             };
             const mappedModel = modelMap[data.config.model.modelId] || data.config.model.modelId;
-            if (!localStorage.getItem('cursor-model')) {
+            if (!safeLocalStorage.getItem('cursor-model')) {
               setCursorModel(mappedModel);
             }
           }
@@ -2119,7 +2120,7 @@ function ChatInterface({
 
       // Check if we should load more messages (scrolled near top)
       const scrolledNearTop = container.scrollTop < 100;
-      const provider = localStorage.getItem('selected-provider') || 'claude';
+      const provider = safeLocalStorage.getItem('selected-provider', 'claude');
 
       if (
         scrolledNearTop &&
@@ -2168,7 +2169,7 @@ function ChatInterface({
     // Load session messages when session changes
     const loadMessages = async () => {
       if (selectedSession && selectedProject) {
-        const provider = localStorage.getItem('selected-provider') || 'claude';
+        const provider = safeLocalStorage.getItem('selected-provider', 'claude');
 
         // Reset pagination state when switching sessions
         setMessagesOffset(0);
@@ -2256,17 +2257,16 @@ function ChatInterface({
   // Persist input draft to localStorage
   useEffect(() => {
     if (selectedProject && input !== '') {
-      safeLocalStorage.setItem(`draft_input_${selectedProject.name}`, input);
+      chatStorageManager.setItem(`draft_input_${selectedProject.name}`, input);
     } else if (selectedProject && input === '') {
-      safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
+      chatStorageManager.removeItem(`draft_input_${selectedProject.name}`);
     }
   }, [input, selectedProject]);
 
   // Persist chat messages to localStorage
   useEffect(() => {
     if (selectedProject && chatMessages.length > 0) {
-      safeLocalStorage.setItem(
-        `chat_messages_${selectedProject.name}`,
+      chatStorageManager.setItem(`chat_messages_${selectedProject.name}`,
         JSON.stringify(chatMessages)
       );
     }
@@ -2276,7 +2276,7 @@ function ChatInterface({
   useEffect(() => {
     if (selectedProject) {
       // Always load saved input draft for the project
-      const savedInput = safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
+      const savedInput = chatStorageManager.getItem(`draft_input_${selectedProject.name}`) || '';
       if (savedInput !== input) {
         setInput(savedInput);
       }
@@ -2756,7 +2756,7 @@ function ChatInterface({
 
           // Clear persisted chat messages after successful completion
           if (selectedProject && latestMessage.exitCode === 0) {
-            safeLocalStorage.removeItem(`chat_messages_${selectedProject.name}`);
+            chatStorageManager.removeItem(`chat_messages_${selectedProject.name}`);
           }
           break;
 
@@ -3253,7 +3253,7 @@ function ChatInterface({
 
     // Clear the saved draft since message was sent
     if (selectedProject) {
-      safeLocalStorage.removeItem(`draft_input_${selectedProject.name}`);
+      chatStorageManager.removeItem(`draft_input_${selectedProject.name}`);
     }
   };
 
@@ -3444,7 +3444,7 @@ function ChatInterface({
                     <button
                       onClick={() => {
                         setProvider('claude');
-                        localStorage.setItem('selected-provider', 'claude');
+                        safeLocalStorage.setItem('selected-provider', 'claude');
                         // Focus input after selection
                         setTimeout(() => textareaRef.current?.focus(), 100);
                       }}
@@ -3486,7 +3486,7 @@ function ChatInterface({
                     <button
                       onClick={() => {
                         setProvider('cursor');
-                        localStorage.setItem('selected-provider', 'cursor');
+                        safeLocalStorage.setItem('selected-provider', 'cursor');
                         // Focus input after selection
                         setTimeout(() => textareaRef.current?.focus(), 100);
                       }}
@@ -3537,7 +3537,7 @@ function ChatInterface({
                       onChange={(e) => {
                         const newModel = e.target.value;
                         setCursorModel(newModel);
-                        localStorage.setItem('cursor-model', newModel);
+                        safeLocalStorage.setItem('cursor-model', newModel);
                       }}
                       className='pl-4 pr-10 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-w-[140px]'
                       disabled={provider !== 'cursor'}
@@ -3649,14 +3649,14 @@ function ChatInterface({
               <div className='w-full'>
                 <div className='flex items-center space-x-3 mb-2'>
                   <div className='w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1 bg-transparent'>
-                    {(localStorage.getItem('selected-provider') || 'claude') === 'cursor' ? (
+                    {(safeLocalStorage.getItem('selected-provider', 'claude')) === 'cursor' ? (
                       <CursorLogo className='w-full h-full' />
                     ) : (
                       <ClaudeLogo className='w-full h-full' />
                     )}
                   </div>
                   <div className='text-sm font-medium text-gray-900 dark:text-white'>
-                    {(localStorage.getItem('selected-provider') || 'claude') === 'cursor'
+                    {(safeLocalStorage.getItem('selected-provider', 'claude')) === 'cursor'
                       ? 'Cursor'
                       : 'Claude'}
                   </div>

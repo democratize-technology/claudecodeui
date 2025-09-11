@@ -1,5 +1,5 @@
 import { api } from './api';
-import { handleError, withRetry, ERROR_CATEGORIES, ERROR_SEVERITY } from './errorHandling';
+import { handleError, withRetry, ERROR_CATEGORIES, ERROR_SEVERITY } from './errorHandling.jsx';
 
 export async function transcribeWithWhisper(audioBlob, onStatusChange) {
   const formData = new FormData();

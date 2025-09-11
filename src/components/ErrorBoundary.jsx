@@ -1,5 +1,5 @@
 import React from 'react';
-import { processErrorBoundaryError, ERROR_SEVERITY } from '../utils/errorHandling';
+import { processErrorBoundaryError, ERROR_SEVERITY } from '../utils/errorHandling.jsx';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
