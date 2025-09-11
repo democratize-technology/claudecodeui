@@ -97,13 +97,7 @@ export const TaskMasterProvider = ({ children }) => {
     try {
       await executeNamedAsync(async () => {
         clearError();
-        const response = await api.get('/projects');
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch projects: ${response.status}`);
-        }
-
-        const projectsData = await response.json();
+        const projectsData = await api.get('/projects');
 
         // Check if projectsData is an array
         if (!Array.isArray(projectsData)) {
@@ -150,21 +144,14 @@ export const TaskMasterProvider = ({ children }) => {
       // Try to fetch fresh TaskMaster detection data for the project
       if (project?.name) {
         try {
-          const response = await api.get(`/taskmaster/detect/${encodeURIComponent(project.name)}`);
-          if (response.ok) {
-            const detectionData = await response.json();
-            setProjectTaskMaster(detectionData.taskmaster);
-          } else {
-            // If individual detection fails, fall back to project data from /api/projects
-            console.warn(
-              'Individual TaskMaster detection failed, using project data:',
-              response.status
-            );
-            setProjectTaskMaster(project.taskmaster || null);
-          }
-        } catch (detectionError) {
+          const detectionData = await api.get(`/taskmaster/detect/${encodeURIComponent(project.name)}`);
+          setProjectTaskMaster(detectionData.taskmaster);
+        } catch (error) {
           // If individual detection fails, fall back to project data from /api/projects
-          console.warn('TaskMaster detection error, using project data:', detectionError.message);
+          console.warn(
+            'Individual TaskMaster detection failed, using project data:',
+            error.message
+          );
           setProjectTaskMaster(project.taskmaster || null);
         }
       } else {
@@ -217,16 +204,9 @@ export const TaskMasterProvider = ({ children }) => {
         clearError();
 
         // Load tasks from the TaskMaster API endpoint
-        const response = await api.get(
+        const data = await api.get(
           `/taskmaster/tasks/${encodeURIComponent(currentProject.name)}`
         );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to load tasks');
-        }
-
-        const data = await response.json();
 
         setTasks(data.tasks || []);
 

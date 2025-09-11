@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useErrorHandler } from '../utils/hooks/useErrorHandler.jsx';
 import { ERROR_CATEGORIES, ERROR_SEVERITY, withRetry } from '../utils/errorHandling.jsx';
 import safeLocalStorage from '../utils/safeLocalStorage';
@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }) => {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // Add explicit loading state
+  const isCheckingAuthRef = useRef(false); // Prevent concurrent auth checks
 
   // Initialize standardized error handling for authentication operations
   const errorHandler = useErrorHandler({
@@ -41,7 +42,14 @@ export const AuthProvider = ({ children }) => {
   });
 
   const checkAuthStatus = useCallback(async () => {
+    // Prevent concurrent auth checks
+    if (isCheckingAuthRef.current) {
+      console.log('Auth check already in progress, skipping');
+      return;
+    }
+
     try {
+      isCheckingAuthRef.current = true;
       setIsLoading(true);
       setError(null);
 
@@ -94,13 +102,14 @@ export const AuthProvider = ({ children }) => {
       setError('Failed to check authentication status');
     } finally {
       setIsLoading(false);
+      isCheckingAuthRef.current = false;
     }
-  }, [token]); // Only depend on token, not errorHandler
+  }, [token]); // Only depend on token
 
-  // Check authentication status on mount
+  // Check authentication status on mount and when token changes
   useEffect(() => {
     checkAuthStatus();
-  }, [checkAuthStatus]);
+  }, [checkAuthStatus]); // Now safe since checkAuthStatus only depends on token
 
   const login = async (username, password) => {
     try {
