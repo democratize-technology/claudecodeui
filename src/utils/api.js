@@ -1,7 +1,36 @@
 import safeLocalStorage from './safeLocalStorage';
 
-// Utility function for authenticated API calls
-export const authenticatedFetch = (url, options = {}) => {
+// Custom error class for API-specific errors
+export class ApiError extends Error {
+  constructor(status, message, data = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+// Centralized response handler for consistent error handling and JSON parsing
+const handleApiResponse = async (response, options = {}) => {
+  if (!response.ok) {
+    // Try to parse error response as JSON, fallback to status text
+    let errorData = { message: response.statusText };
+    try {
+      errorData = await response.json();
+    } catch {
+      // Ignore JSON parse errors, use fallback
+    }
+    
+    const message = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+    throw new ApiError(response.status, message, errorData);
+  }
+  
+  // Return raw response if requested, otherwise parse JSON
+  return options.raw ? response : response.json();
+};
+
+// Utility function for authenticated API calls with centralized error handling
+export const authenticatedFetch = async (url, options = {}) => {
   const token = safeLocalStorage.getItem('auth-token');
 
   const defaultHeaders = {};
@@ -15,32 +44,41 @@ export const authenticatedFetch = (url, options = {}) => {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
   }
 
-  return fetch(url, {
+  const response = await fetch(url, {
     ...options,
     headers: {
       ...defaultHeaders,
       ...options.headers
     }
   });
+
+  return handleApiResponse(response, options);
 };
 
 // API endpoints
 export const api = {
-  // Auth endpoints (no token required)
+  // Auth endpoints (no token required) 
   auth: {
-    status: () => fetch('/api/auth/status'),
-    login: (username, password) =>
-      fetch('/api/auth/login', {
+    status: async () => {
+      const response = await fetch('/api/auth/status');
+      return handleApiResponse(response);
+    },
+    login: async (username, password) => {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
-      }),
-    register: (username, password) =>
-      fetch('/api/auth/register', {
+      });
+      return handleApiResponse(response);
+    },
+    register: async (username, password) => {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
-      }),
+      });
+      return handleApiResponse(response);
+    },
     user: () => authenticatedFetch('/api/auth/user'),
     logout: () => authenticatedFetch('/api/auth/logout', { method: 'POST' })
   },

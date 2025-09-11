@@ -26,7 +26,10 @@ describe('API utilities', () => {
   describe('authenticatedFetch', () => {
     it('should make a fetch request without token when no token in localStorage', async () => {
       localStorageMock.getItem.mockReturnValue(null);
-      fetch.mockResolvedValue({ json: () => Promise.resolve({}) });
+      fetch.mockResolvedValue({ 
+        ok: true,
+        json: () => Promise.resolve({}) 
+      });
 
       await authenticatedFetch('/test-endpoint');
 
@@ -41,7 +44,7 @@ describe('API utilities', () => {
     it('should include Authorization header when token exists', async () => {
       const testToken = 'test-token-123';
       localStorageMock.getItem.mockReturnValue(testToken);
-      fetch.mockResolvedValue({ json: () => Promise.resolve({}) });
+      fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
 
       await authenticatedFetch('/test-endpoint');
 
@@ -55,7 +58,7 @@ describe('API utilities', () => {
 
     it('should merge custom headers with default headers', async () => {
       localStorageMock.getItem.mockReturnValue('token');
-      fetch.mockResolvedValue({ json: () => Promise.resolve({}) });
+      fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
 
       await authenticatedFetch('/test-endpoint', {
         headers: {
@@ -78,7 +81,7 @@ describe('API utilities', () => {
 
     it('should allow overriding default headers', async () => {
       localStorageMock.getItem.mockReturnValue('token');
-      fetch.mockResolvedValue({ json: () => Promise.resolve({}) });
+      fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
 
       await authenticatedFetch('/test-endpoint', {
         headers: {
@@ -96,7 +99,7 @@ describe('API utilities', () => {
 
     it('should not set Content-Type for FormData bodies', async () => {
       localStorageMock.getItem.mockReturnValue('token');
-      fetch.mockResolvedValue({ json: () => Promise.resolve({}) });
+      fetch.mockResolvedValue({ ok: true, json: () => Promise.resolve({}) });
 
       const formData = new FormData();
       formData.append('test', 'data');
@@ -119,6 +122,7 @@ describe('API utilities', () => {
   describe('api.auth', () => {
     beforeEach(() => {
       fetch.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ success: true })
       });
     });
@@ -151,6 +155,7 @@ describe('API utilities', () => {
     beforeEach(() => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ messages: [] })
       });
     });
@@ -196,6 +201,7 @@ describe('API utilities', () => {
     it('should handle FormData correctly by not setting Content-Type', async () => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ transcription: 'test' })
       });
 
@@ -220,6 +226,7 @@ describe('API utilities', () => {
     beforeEach(() => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ success: true })
       });
     });
@@ -281,6 +288,7 @@ describe('API utilities', () => {
     it('should prepend /api to endpoint', async () => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ data: 'test' })
       });
 
@@ -299,6 +307,7 @@ describe('API utilities', () => {
     beforeEach(() => {
       localStorageMock.getItem.mockReturnValue('token');
       fetch.mockResolvedValue({
+        ok: true,
         json: () => Promise.resolve({ content: 'test' })
       });
     });
