@@ -56,8 +56,7 @@ export function useWebSocket() {
       // Fetch server configuration to get the correct WebSocket URL
       let wsBaseUrl;
       try {
-        const configResponse = await api.config();
-        const config = await configResponse.json();
+        const config = await api.config();
         wsBaseUrl = config.wsUrl;
 
         // If the config returns localhost but we're not on localhost, use current host but with API server port
@@ -66,8 +65,8 @@ export function useWebSocket() {
             'Config returned localhost, using current host with API server port instead'
           );
           const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          // For development, API server is typically on port 3002 when Vite is on 3001
-          const apiPort = window.location.port === '3001' ? '3002' : window.location.port;
+          // For development, frontend uses Vite on 5173 with proxy, backend on 3001
+          const apiPort = window.location.port === '5173' ? '3001' : window.location.port;
           wsBaseUrl = `${protocol}//${window.location.hostname}:${apiPort}`;
         }
       } catch (error) {
@@ -75,8 +74,9 @@ export function useWebSocket() {
           'Could not fetch server config, falling back to current host with API server port'
         );
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        // For development, API server is typically on port 3002 when Vite is on 3001
-        const apiPort = window.location.port === '3001' ? '3002' : window.location.port;
+        // For development, both frontend and backend run on the same port (3001)
+        // Frontend uses Vite on 5173 with proxy, backend on 3001
+        const apiPort = window.location.port === '5173' ? '3001' : window.location.port;
         wsBaseUrl = `${protocol}//${window.location.hostname}:${apiPort}`;
       }
 
