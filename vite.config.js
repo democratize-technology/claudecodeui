@@ -37,9 +37,9 @@ export default defineConfig(({ command, mode }) => {
             // UI libraries
             'ui-vendor': ['lucide-react', 'class-variance-authority', 'clsx', 'tailwind-merge'],
             // CodeMirror (large editor dependency)
-            'codemirror': [
+            codemirror: [
               '@codemirror/lang-css',
-              '@codemirror/lang-html', 
+              '@codemirror/lang-html',
               '@codemirror/lang-javascript',
               '@codemirror/lang-json',
               '@codemirror/lang-markdown',
@@ -48,7 +48,12 @@ export default defineConfig(({ command, mode }) => {
               '@uiw/react-codemirror'
             ],
             // Terminal (xterm.js is heavy)
-            'terminal': ['xterm', 'xterm-addon-fit', '@xterm/addon-clipboard', '@xterm/addon-webgl']
+            terminal: [
+              '@xterm/xterm',
+              '@xterm/addon-fit',
+              '@xterm/addon-clipboard',
+              '@xterm/addon-webgl'
+            ]
           },
           // Optimize chunk sizes
           chunkFileNames: (chunkInfo) => {
@@ -71,12 +76,7 @@ export default defineConfig(({ command, mode }) => {
     },
     // Optimize dependencies
     optimizeDeps: {
-      include: [
-        'react',
-        'react-dom',
-        'react-router-dom',
-        'lucide-react'
-      ],
+      include: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
       exclude: [
         // Large dependencies that should be chunked
         '@codemirror/lang-css',
@@ -85,7 +85,7 @@ export default defineConfig(({ command, mode }) => {
         '@codemirror/lang-json',
         '@codemirror/lang-markdown',
         '@codemirror/lang-python',
-        'xterm',
+        '@xterm/xterm',
         '@xterm/addon-webgl'
       ]
     }

@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event';
 import Shell from '../components/Shell';
 
 // Mock xterm and addons
-jest.mock('xterm', () => ({
-  Terminal: jest.fn(() => ({
+jest.mock('@xterm/xterm', () =>
+  jest.fn(() => ({
     open: jest.fn(),
     write: jest.fn(),
     clear: jest.fn(),
@@ -20,29 +20,29 @@ jest.mock('xterm', () => ({
     rows: 24,
     element: { parentNode: { removeChild: jest.fn() } }
   }))
-}));
+);
 
-jest.mock('xterm-addon-fit', () => ({
-  FitAddon: jest.fn(() => ({
+jest.mock('@xterm/addon-fit', () =>
+  jest.fn(() => ({
     fit: jest.fn(),
     activate: jest.fn(),
     dispose: jest.fn()
   }))
-}));
+);
 
-jest.mock('@xterm/addon-clipboard', () => ({
-  ClipboardAddon: jest.fn(() => ({
+jest.mock('@xterm/addon-clipboard', () =>
+  jest.fn(() => ({
     activate: jest.fn(),
     dispose: jest.fn()
   }))
-}));
+);
 
-jest.mock('@xterm/addon-webgl', () => ({
-  WebglAddon: jest.fn(() => ({
+jest.mock('@xterm/addon-webgl', () =>
+  jest.fn(() => ({
     activate: jest.fn(),
     dispose: jest.fn()
   }))
-}));
+);
 
 // Mock WebSocket
 const mockWebSocket = {
@@ -186,7 +186,7 @@ describe('Shell Component Security Tests', () => {
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
 
       // Mock terminal onData callback and trigger it
-      const { Terminal } = require('xterm');
+      const Terminal = require('@xterm/xterm');
       const terminalInstance = Terminal.mock.results[0].value;
       const onDataCallback = terminalInstance.onData.mock.calls[0][0];
 
@@ -293,7 +293,7 @@ describe('Shell Component Security Tests', () => {
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
 
       // Get terminal instance
-      const { Terminal } = require('xterm');
+      const Terminal = require('@xterm/xterm');
       const terminalInstance = Terminal.mock.results[0].value;
 
       // Simulate restart (this would be triggered by user action)
@@ -313,7 +313,7 @@ describe('Shell Component Security Tests', () => {
     test('should handle resize messages properly', async () => {
       render(<Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />);
 
-      const { Terminal } = require('xterm');
+      const Terminal = require('@xterm/xterm');
       const terminalInstance = Terminal.mock.results[0].value;
 
       // Mock terminal dimensions
@@ -418,7 +418,7 @@ describe('Shell Component Security Tests', () => {
         <Shell selectedProject={mockProject} selectedSession={mockSession} isActive={true} />
       );
 
-      const { Terminal } = require('xterm');
+      const Terminal = require('@xterm/xterm');
       const terminalInstance = Terminal.mock.results[0].value;
 
       unmount();

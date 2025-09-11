@@ -1,13 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as XtermModule from 'xterm';
-const Terminal = XtermModule.default || XtermModule.Terminal || XtermModule;
-import * as FitAddonModule from 'xterm-addon-fit';
-const FitAddon = FitAddonModule.default || FitAddonModule.FitAddon || FitAddonModule;
-import * as ClipboardAddonModule from '@xterm/addon-clipboard';
-const ClipboardAddon = ClipboardAddonModule.default || ClipboardAddonModule.ClipboardAddon || ClipboardAddonModule;
-import * as WebglAddonModule from '@xterm/addon-webgl';
-const WebglAddon = WebglAddonModule.default || WebglAddonModule.WebglAddon || WebglAddonModule;
-import 'xterm/css/xterm.css';
+import Terminal from '@xterm/xterm';
+import FitAddon from '@xterm/addon-fit';
+import ClipboardAddon from '@xterm/addon-clipboard';
+import WebglAddon from '@xterm/addon-webgl';
+import '@xterm/xterm/css/xterm.css';
 import { api } from '../utils/api';
 
 // CSS to remove xterm focus outline
@@ -532,7 +528,12 @@ function Shell({
             window.open(data.url, '_blank');
           }
         } catch (error) {
-          console.error('Failed to process WebSocket message:', error.message, 'Raw data:', event.data);
+          console.error(
+            'Failed to process WebSocket message:',
+            error.message,
+            'Raw data:',
+            event.data
+          );
           // Continue operation - individual message failures shouldn't break the terminal
         }
       };
