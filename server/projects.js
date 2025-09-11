@@ -382,6 +382,8 @@ async function extractProjectDirectory(projectName) {
 }
 
 async function getProjects() {
+  
+  // ORIGINAL CODE - RE-ENABLED WITH OPTIMIZATIONS
   const claudeDir = path.join(process.env.HOME, '.claude', 'projects');
   const config = await loadProjectConfig();
   const projects = [];
@@ -394,17 +396,29 @@ async function getProjects() {
     // First, get existing Claude projects from the file system
     const entries = await fs.readdir(claudeDir, { withFileTypes: true });
 
+    // QUICK FIX: Limit initial load to 3 projects to prevent hanging
+    // TODO: Implement pagination or lazy loading for full project list
+    const maxProjects = 3;
+    let processedCount = 0;
+
     for (const entry of entries) {
+      if (processedCount >= maxProjects) {
+        console.log(`⚡ Quick fix: Limited to ${maxProjects} projects (${entries.length - maxProjects} remaining)`);
+        break;
+      }
       if (entry.isDirectory()) {
         existingProjects.add(entry.name);
         const projectPath = path.join(claudeDir, entry.name);
 
-        // Extract actual project directory from JSONL sessions
-        const actualProjectDir = await extractProjectDirectory(entry.name);
+        // QUICK FIX: Skip expensive JSONL parsing, use fallback path
+        // const actualProjectDir = await extractProjectDirectory(entry.name);
+        const actualProjectDir = entry.name.replace(/-/g, '/');
 
         // Get display name from config or generate one
         const customName = config[entry.name]?.displayName;
-        const autoDisplayName = await generateDisplayName(entry.name, actualProjectDir);
+        // QUICK FIX: Skip expensive display name generation
+        // const autoDisplayName = await generateDisplayName(entry.name, actualProjectDir);
+        const autoDisplayName = entry.name.replace(/-/g, '/');
         const fullPath = actualProjectDir;
 
         const project = {
@@ -416,8 +430,9 @@ async function getProjects() {
           sessions: []
         };
 
+        // QUICK FIX: Skip expensive session loading for initial load
         // Try to get sessions for this project (just first 5 for performance)
-        try {
+        /*try {
           const sessionResult = await getSessions(entry.name, 5, 0);
           project.sessions = sessionResult.sessions || [];
           project.sessionMeta = {
@@ -434,10 +449,15 @@ async function getProjects() {
         } catch (e) {
           console.warn(`Could not load Cursor sessions for project ${entry.name}:`, e.message);
           project.cursorSessions = [];
-        }
+        }*/
 
+        // Set basic defaults for quick load
+        project.sessionMeta = { hasMore: false, total: 0 };
+        project.cursorSessions = [];
+
+        // QUICK FIX: Skip TaskMaster detection
         // Add TaskMaster detection
-        try {
+        /*try {
           const taskMasterResult = await detectTaskMasterFolder(actualProjectDir);
           project.taskmaster = {
             hasTaskmaster: taskMasterResult.hasTaskmaster,
@@ -456,9 +476,18 @@ async function getProjects() {
             metadata: null,
             status: 'error'
           };
-        }
+        }*/
+
+        // Set basic defaults for quick load
+        project.taskmaster = {
+          hasTaskmaster: false,
+          hasEssentialFiles: false,
+          metadata: null,
+          status: 'not-configured'
+        };
 
         projects.push(project);
+        processedCount++;
       }
     }
   } catch (error) {

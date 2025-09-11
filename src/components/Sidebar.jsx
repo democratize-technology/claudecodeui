@@ -929,12 +929,6 @@ function Sidebar({
                         }
                         toggleProject(project.name);
                       }}
-                      onTouchEnd={handleTouchClick(() => {
-                        if (selectedProject?.name !== project.name) {
-                          handleProjectSelect(project);
-                        }
-                        toggleProject(project.name);
-                      })}
                     >
                       <div className='flex items-center gap-3 min-w-0 flex-1'>
                         {isExpanded ? (

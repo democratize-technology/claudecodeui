@@ -214,9 +214,6 @@ app.use('/api/taskmaster', authenticateToken, taskmasterRoutes);
 // MCP utilities
 app.use('/api/mcp-utils', authenticateToken, mcpUtilsRoutes);
 
-// Static files served after API routes
-app.use(express.static(path.join(__dirname, '../dist')));
-
 // API Routes (protected)
 app.get('/api/config', authenticateToken, (req, res) => {
   const host = req.headers.host || `${req.hostname}:${PORT}`;
@@ -1110,6 +1107,9 @@ app.post('/api/projects/:projectName/upload-images', authenticateToken, async (r
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Static files served after API routes to avoid intercepting API requests
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // Serve React app for all other routes
 app.get('*', (req, res) => {
