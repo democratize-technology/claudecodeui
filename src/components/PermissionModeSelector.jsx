@@ -1,5 +1,3 @@
-;
-
 function PermissionModeSelector({ mode, onModeChange, className = '' }) {
   // Mode configuration with styling and labels
   const modeConfig = {

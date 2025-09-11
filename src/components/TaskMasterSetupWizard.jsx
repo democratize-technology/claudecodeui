@@ -25,7 +25,7 @@ const TaskMasterSetupWizard = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [error, setError] = useState(null);
-  
+
   const { isLoading: loading, executeAsync } = useLoadingState();
   const [setupData, setSetupData] = useState({
     projectRoot: '',

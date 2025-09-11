@@ -90,7 +90,6 @@ function formatUsageLimitText(text) {
   }
 }
 
-
 // Memoized message component to prevent unnecessary re-renders
 const MessageComponent = memo(
   ({
@@ -187,7 +186,7 @@ const MessageComponent = memo(
                   </div>
                 ) : (
                   <div className='w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1'>
-                    {(safeLocalStorage.getItem('selected-provider', 'claude')) === 'cursor' ? (
+                    {safeLocalStorage.getItem('selected-provider', 'claude') === 'cursor' ? (
                       <CursorLogo className='w-full h-full' />
                     ) : (
                       <ClaudeLogo className='w-full h-full' />
@@ -199,7 +198,7 @@ const MessageComponent = memo(
                     ? 'Error'
                     : message.type === 'tool'
                       ? 'Tool'
-                      : (safeLocalStorage.getItem('selected-provider', 'claude')) === 'cursor'
+                      : safeLocalStorage.getItem('selected-provider', 'claude') === 'cursor'
                         ? 'Cursor'
                         : 'Claude'}
                 </div>
@@ -1410,7 +1409,10 @@ function ChatInterface({
     onError: (processedError) => {
       // Additional user feedback for critical storage errors
       if (processedError.severity === ERROR_SEVERITY.HIGH) {
-        console.warn('Critical storage error - user may lose chat history:', processedError.userMessage);
+        console.warn(
+          'Critical storage error - user may lose chat history:',
+          processedError.userMessage
+        );
       }
     }
   });
@@ -1446,143 +1448,142 @@ function ChatInterface({
   });
 
   // Enhanced storage manager with proper error handling and user feedback
-  const enhancedStorageManager = useMemo(() => ({
-    setItem: (key, value) => {
-      try {
-        // For chat messages, implement compression and size limits
-        if (key.startsWith('chat_messages_') && typeof value === 'string') {
-          try {
-            const parsed = JSON.parse(value);
-            // Limit to last 50 messages to prevent storage bloat
-            if (Array.isArray(parsed) && parsed.length > 50) {
+  const enhancedStorageManager = useMemo(
+    () => ({
+      setItem: (key, value) => {
+        try {
+          // For chat messages, implement compression and size limits
+          if (key.startsWith('chat_messages_') && typeof value === 'string') {
+            try {
+              const parsed = JSON.parse(value);
+              // Limit to last 50 messages to prevent storage bloat
+              if (Array.isArray(parsed) && parsed.length > 50) {
+                storageErrorHandler.reportError(
+                  new Error(`Truncating chat history from ${parsed.length} to 50 messages`),
+                  ERROR_CATEGORIES.STORAGE,
+                  ERROR_SEVERITY.LOW,
+                  { operation: 'chat_truncation', key, messageCount: parsed.length }
+                );
+                const truncated = parsed.slice(-50);
+                value = JSON.stringify(truncated);
+              }
+            } catch (parseError) {
               storageErrorHandler.reportError(
-                new Error(`Truncating chat history from ${parsed.length} to 50 messages`),
+                parseError,
                 ERROR_CATEGORIES.STORAGE,
-                ERROR_SEVERITY.LOW,
-                { operation: 'chat_truncation', key, messageCount: parsed.length }
+                ERROR_SEVERITY.MEDIUM,
+                { operation: 'chat_parse', key }
               );
-              const truncated = parsed.slice(-50);
-              value = JSON.stringify(truncated);
             }
-          } catch (parseError) {
-            storageErrorHandler.reportError(
-              parseError,
-              ERROR_CATEGORIES.STORAGE,
-              ERROR_SEVERITY.MEDIUM,
-              { operation: 'chat_parse', key }
-            );
-          }
-        }
-
-        localStorage.setItem(key, value);
-      } catch (error) {
-        if (error.name === 'QuotaExceededError') {
-          // User-visible error for quota exceeded
-          storageErrorHandler.reportError(
-            new Error('Storage quota exceeded. Clearing old data to preserve chat history.'),
-            ERROR_CATEGORIES.STORAGE,
-            ERROR_SEVERITY.HIGH,
-            { operation: 'quota_exceeded', key }
-          );
-
-          // Clear old chat messages to free up space
-          const keys = Object.keys(localStorage);
-          const chatKeys = keys.filter((k) => k.startsWith('chat_messages_')).sort();
-
-          if (chatKeys.length > 3) {
-            chatKeys.slice(0, chatKeys.length - 3).forEach((k) => {
-              localStorage.removeItem(k);
-            });
           }
 
-          // Clear draft inputs as lower priority data
-          const draftKeys = keys.filter((k) => k.startsWith('draft_input_'));
-          draftKeys.forEach((k) => {
-            localStorage.removeItem(k);
-          });
-
-          // Try again with reduced data
-          try {
-            localStorage.setItem(key, value);
+          localStorage.setItem(key, value);
+        } catch (error) {
+          if (error.name === 'QuotaExceededError') {
+            // User-visible error for quota exceeded
             storageErrorHandler.reportError(
-              new Error('Successfully saved chat data after cleanup'),
-              ERROR_CATEGORIES.STORAGE,
-              ERROR_SEVERITY.LOW,
-              { operation: 'quota_recovery', key }
-            );
-          } catch (retryError) {
-            // Critical error - user will lose data
-            storageErrorHandler.reportError(
-              new Error('Failed to save chat history. You may lose recent messages.'),
+              new Error('Storage quota exceeded. Clearing old data to preserve chat history.'),
               ERROR_CATEGORIES.STORAGE,
               ERROR_SEVERITY.HIGH,
-              { operation: 'quota_critical_failure', key, error: retryError.message }
+              { operation: 'quota_exceeded', key }
             );
 
-            // Last resort: Try to save just the last 10 messages
-            if (key.startsWith('chat_messages_') && typeof value === 'string') {
-              try {
-                const parsed = JSON.parse(value);
-                if (Array.isArray(parsed) && parsed.length > 10) {
-                  const minimal = parsed.slice(-10);
-                  localStorage.setItem(key, JSON.stringify(minimal));
+            // Clear old chat messages to free up space
+            const keys = Object.keys(localStorage);
+            const chatKeys = keys.filter((k) => k.startsWith('chat_messages_')).sort();
+
+            if (chatKeys.length > 3) {
+              chatKeys.slice(0, chatKeys.length - 3).forEach((k) => {
+                localStorage.removeItem(k);
+              });
+            }
+
+            // Clear draft inputs as lower priority data
+            const draftKeys = keys.filter((k) => k.startsWith('draft_input_'));
+            draftKeys.forEach((k) => {
+              localStorage.removeItem(k);
+            });
+
+            // Try again with reduced data
+            try {
+              localStorage.setItem(key, value);
+              storageErrorHandler.reportError(
+                new Error('Successfully saved chat data after cleanup'),
+                ERROR_CATEGORIES.STORAGE,
+                ERROR_SEVERITY.LOW,
+                { operation: 'quota_recovery', key }
+              );
+            } catch (retryError) {
+              // Critical error - user will lose data
+              storageErrorHandler.reportError(
+                new Error('Failed to save chat history. You may lose recent messages.'),
+                ERROR_CATEGORIES.STORAGE,
+                ERROR_SEVERITY.HIGH,
+                { operation: 'quota_critical_failure', key, error: retryError.message }
+              );
+
+              // Last resort: Try to save just the last 10 messages
+              if (key.startsWith('chat_messages_') && typeof value === 'string') {
+                try {
+                  const parsed = JSON.parse(value);
+                  if (Array.isArray(parsed) && parsed.length > 10) {
+                    const minimal = parsed.slice(-10);
+                    localStorage.setItem(key, JSON.stringify(minimal));
+                    storageErrorHandler.reportError(
+                      new Error('Saved only last 10 messages due to storage constraints'),
+                      ERROR_CATEGORIES.STORAGE,
+                      ERROR_SEVERITY.MEDIUM,
+                      { operation: 'minimal_save', key, messageCount: 10 }
+                    );
+                  }
+                } catch (minimalError) {
+                  // Complete failure - user feedback critical
                   storageErrorHandler.reportError(
-                    new Error('Saved only last 10 messages due to storage constraints'),
+                    new Error('Unable to save chat history. Consider clearing browser storage.'),
                     ERROR_CATEGORIES.STORAGE,
-                    ERROR_SEVERITY.MEDIUM,
-                    { operation: 'minimal_save', key, messageCount: 10 }
+                    ERROR_SEVERITY.HIGH,
+                    { operation: 'complete_failure', key }
                   );
                 }
-              } catch (minimalError) {
-                // Complete failure - user feedback critical
-                storageErrorHandler.reportError(
-                  new Error('Unable to save chat history. Consider clearing browser storage.'),
-                  ERROR_CATEGORIES.STORAGE,
-                  ERROR_SEVERITY.HIGH,
-                  { operation: 'complete_failure', key }
-                );
               }
             }
+          } else {
+            // Other storage errors
+            storageErrorHandler.reportError(
+              error,
+              ERROR_CATEGORIES.STORAGE,
+              ERROR_SEVERITY.MEDIUM,
+              { operation: 'storage_general', key }
+            );
           }
-        } else {
-          // Other storage errors
-          storageErrorHandler.reportError(
-            error,
-            ERROR_CATEGORIES.STORAGE,
-            ERROR_SEVERITY.MEDIUM,
-            { operation: 'storage_general', key }
-          );
+        }
+      },
+
+      getItem: (key) => {
+        try {
+          return localStorage.getItem(key);
+        } catch (error) {
+          storageErrorHandler.reportError(error, ERROR_CATEGORIES.STORAGE, ERROR_SEVERITY.LOW, {
+            operation: 'storage_read',
+            key
+          });
+          return null;
+        }
+      },
+
+      removeItem: (key) => {
+        try {
+          localStorage.removeItem(key);
+        } catch (error) {
+          storageErrorHandler.reportError(error, ERROR_CATEGORIES.STORAGE, ERROR_SEVERITY.LOW, {
+            operation: 'storage_remove',
+            key
+          });
         }
       }
-    },
-    
-    getItem: (key) => {
-      try {
-        return localStorage.getItem(key);
-      } catch (error) {
-        storageErrorHandler.reportError(
-          error,
-          ERROR_CATEGORIES.STORAGE,
-          ERROR_SEVERITY.LOW,
-          { operation: 'storage_read', key }
-        );
-        return null;
-      }
-    },
-    
-    removeItem: (key) => {
-      try {
-        localStorage.removeItem(key);
-      } catch (error) {
-        storageErrorHandler.reportError(
-          error,
-          ERROR_CATEGORIES.STORAGE,
-          ERROR_SEVERITY.LOW,
-          { operation: 'storage_remove', key }
-        );
-      }
-    }
-  }), [storageErrorHandler]);
+    }),
+    [storageErrorHandler]
+  );
 
   const [currentSessionId, setCurrentSessionId] = useState(selectedSession?.id || null);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -1603,7 +1604,7 @@ function ChatInterface({
   const streamBufferRef = useRef('');
   const streamTimerRef = useRef(null);
   const [debouncedInput, setDebouncedInput] = useState('');
-  
+
   // CRITICAL FIX: Cache sessionStorage to avoid blocking main thread
   const [cachedSessionId, setCachedSessionId] = useState(() => {
     try {
@@ -1653,7 +1654,8 @@ function ChatInterface({
   // Load Cursor default model from config
   useEffect(() => {
     if (provider === 'cursor') {
-      api.cursor.config()
+      api.cursor
+        .config()
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.config?.model?.modelId) {
@@ -1671,11 +1673,16 @@ function ChatInterface({
             }
           }
         })
-        .catch((err) => 
-          cursorErrorHandler.reportError(err, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
-            operation: 'cursor_config_load',
-            context: 'initialization'
-          })
+        .catch((err) =>
+          cursorErrorHandler.reportError(
+            err,
+            ERROR_CATEGORIES.EXTERNAL_SERVICE,
+            ERROR_SEVERITY.LOW,
+            {
+              operation: 'cursor_config_load',
+              context: 'initialization'
+            }
+          )
         );
     }
   }, [provider]);
@@ -2385,7 +2392,8 @@ function ChatInterface({
   // Persist chat messages to localStorage
   useEffect(() => {
     if (selectedProject && chatMessages.length > 0) {
-      enhancedStorageManager.setItem(`chat_messages_${selectedProject.name}`,
+      enhancedStorageManager.setItem(
+        `chat_messages_${selectedProject.name}`,
         JSON.stringify(chatMessages)
       );
     }
@@ -2395,7 +2403,8 @@ function ChatInterface({
   useEffect(() => {
     if (selectedProject) {
       // Always load saved input draft for the project
-      const savedInput = enhancedStorageManager.getItem(`draft_input_${selectedProject.name}`) || '';
+      const savedInput =
+        enhancedStorageManager.getItem(`draft_input_${selectedProject.name}`) || '';
       if (savedInput !== input) {
         setInput(savedInput);
       }
@@ -2713,11 +2722,16 @@ function ChatInterface({
             }
             // For other cursor-system messages, avoid dumping raw objects to chat
           } catch (e) {
-            cursorErrorHandler.reportError(e, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
-              operation: 'cursor_system_message_handling',
-              messageType: 'cursor-system',
-              context: 'real_time_updates'
-            });
+            cursorErrorHandler.reportError(
+              e,
+              ERROR_CATEGORIES.EXTERNAL_SERVICE,
+              ERROR_SEVERITY.LOW,
+              {
+                operation: 'cursor_system_message_handling',
+                messageType: 'cursor-system',
+                context: 'real_time_updates'
+              }
+            );
           }
           break;
 
@@ -2792,11 +2806,16 @@ function ChatInterface({
               return updated;
             });
           } catch (e) {
-            cursorErrorHandler.reportError(e, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
-              operation: 'cursor_result_message_handling',
-              messageType: 'cursor-result',
-              context: 'real_time_updates'
-            });
+            cursorErrorHandler.reportError(
+              e,
+              ERROR_CATEGORIES.EXTERNAL_SERVICE,
+              ERROR_SEVERITY.LOW,
+              {
+                operation: 'cursor_result_message_handling',
+                messageType: 'cursor-result',
+                context: 'real_time_updates'
+              }
+            );
           }
 
           // Mark session as inactive
@@ -2852,11 +2871,16 @@ function ChatInterface({
               }
             }
           } catch (e) {
-            cursorErrorHandler.reportError(e, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
-              operation: 'cursor_output_message_handling',
-              messageType: 'cursor-output',
-              context: 'real_time_updates'
-            });
+            cursorErrorHandler.reportError(
+              e,
+              ERROR_CATEGORIES.EXTERNAL_SERVICE,
+              ERROR_SEVERITY.LOW,
+              {
+                operation: 'cursor_output_message_handling',
+                messageType: 'cursor-output',
+                context: 'real_time_updates'
+              }
+            );
           }
           break;
 
@@ -3187,8 +3211,8 @@ function ChatInterface({
         // Validate file object and properties
         if (!file || typeof file !== 'object') {
           fileErrorHandler.reportError(
-            new Error('Invalid file object received'), 
-            ERROR_CATEGORIES.VALIDATION, 
+            new Error('Invalid file object received'),
+            ERROR_CATEGORIES.VALIDATION,
             ERROR_SEVERITY.LOW,
             {
               operation: 'file_validation',
@@ -3801,14 +3825,14 @@ function ChatInterface({
               <div className='w-full'>
                 <div className='flex items-center space-x-3 mb-2'>
                   <div className='w-8 h-8 rounded-full flex items-center justify-center text-white text-sm flex-shrink-0 p-1 bg-transparent'>
-                    {(safeLocalStorage.getItem('selected-provider', 'claude')) === 'cursor' ? (
+                    {safeLocalStorage.getItem('selected-provider', 'claude') === 'cursor' ? (
                       <CursorLogo className='w-full h-full' />
                     ) : (
                       <ClaudeLogo className='w-full h-full' />
                     )}
                   </div>
                   <div className='text-sm font-medium text-gray-900 dark:text-white'>
-                    {(safeLocalStorage.getItem('selected-provider', 'claude')) === 'cursor'
+                    {safeLocalStorage.getItem('selected-provider', 'claude') === 'cursor'
                       ? 'Cursor'
                       : 'Claude'}
                   </div>
@@ -3850,10 +3874,7 @@ function ChatInterface({
           {/* Permission Mode Selector with scroll to bottom button - Above input, clickable for mobile */}
           <div className='max-w-4xl mx-auto mb-3'>
             <div className='flex items-center justify-center gap-3'>
-              <PermissionModeSelector 
-                mode={permissionMode} 
-                onModeChange={handleModeSwitch} 
-              />
+              <PermissionModeSelector mode={permissionMode} onModeChange={handleModeSwitch} />
 
               {/* Scroll to bottom button - positioned next to mode indicator */}
               {isUserScrolledUp && chatMessages.length > 0 && (

@@ -46,34 +46,34 @@ function MobileNav({ activeTab, setActiveTab, isInputFocused }) {
         willChange: isInputFocused ? 'transform' : 'auto'
       }}
     >
-        <div className='flex items-center justify-around py-1'>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
+      <div className='flex items-center justify-around py-1'>
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
 
-            return (
-              <button
-                key={item.id}
-                onClick={item.onClick}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  item.onClick();
-                }}
-                className={`flex items-center justify-center p-2 rounded-lg min-h-[40px] min-w-[40px] relative touch-manipulation ${
-                  isActive
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
-                aria-label={item.id}
-              >
-                <Icon className='w-5 h-5' />
-                {isActive && (
-                  <div className='absolute top-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full' />
-                )}
-              </button>
-            );
-          })}
-        </div>
+          return (
+            <button
+              key={item.id}
+              onClick={item.onClick}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                item.onClick();
+              }}
+              className={`flex items-center justify-center p-2 rounded-lg min-h-[40px] min-w-[40px] relative touch-manipulation ${
+                isActive
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+              aria-label={item.id}
+            >
+              <Icon className='w-5 h-5' />
+              {isActive && (
+                <div className='absolute top-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-blue-600 dark:bg-blue-400 rounded-full' />
+              )}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

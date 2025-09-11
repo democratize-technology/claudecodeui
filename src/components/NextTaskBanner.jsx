@@ -4,7 +4,7 @@ import {
   List,
   Flag,
   CheckCircle,
-  Circle, 
+  Circle,
   Plus,
   FileText,
   Settings,
@@ -413,7 +413,11 @@ const CreateTaskModal = ({ currentProject, onClose, onTaskCreated }) => {
       await executeAsync(async () => {
         const taskData = formData.useAI
           ? { prompt: formData.prompt, priority: formData.priority }
-          : { title: formData.title, description: formData.description, priority: formData.priority };
+          : {
+              title: formData.title,
+              description: formData.description,
+              priority: formData.priority
+            };
 
         const response = await api.taskmaster.addTask(currentProject.name, taskData);
 
@@ -563,13 +567,17 @@ const TemplateSelector = ({ currentProject, onClose, onTemplateApplied }) => {
   useEffect(() => {
     const loadTemplates = async () => {
       try {
-        await executeNamedAsync(async () => {
-          const response = await api.taskmaster.getTemplates();
-          if (response.ok) {
-            const data = await response.json();
-            setTemplates(data.templates);
-          }
-        }, 'loading', 'template-load');
+        await executeNamedAsync(
+          async () => {
+            const response = await api.taskmaster.getTemplates();
+            if (response.ok) {
+              const data = await response.json();
+              setTemplates(data.templates);
+            }
+          },
+          'loading',
+          'template-load'
+        );
       } catch (error) {
         console.error('Error loading templates:', error);
       }
@@ -597,35 +605,39 @@ const TemplateSelector = ({ currentProject, onClose, onTemplateApplied }) => {
     if (!selectedTemplate || !currentProject) return;
 
     try {
-      await executeNamedAsync(async () => {
-        // Apply template
-        const applyResponse = await api.taskmaster.applyTemplate(currentProject.name, {
-          templateId: selectedTemplate.id,
-          fileName,
-          customizations
-        });
+      await executeNamedAsync(
+        async () => {
+          // Apply template
+          const applyResponse = await api.taskmaster.applyTemplate(currentProject.name, {
+            templateId: selectedTemplate.id,
+            fileName,
+            customizations
+          });
 
-        if (!applyResponse.ok) {
-          const error = await applyResponse.json();
-          throw new Error(error.message || 'Failed to apply template');
-        }
+          if (!applyResponse.ok) {
+            const error = await applyResponse.json();
+            throw new Error(error.message || 'Failed to apply template');
+          }
 
-        // Parse PRD to generate tasks
-        const parseResponse = await api.taskmaster.parsePRD(currentProject.name, {
-          fileName,
-          numTasks: 10
-        });
+          // Parse PRD to generate tasks
+          const parseResponse = await api.taskmaster.parsePRD(currentProject.name, {
+            fileName,
+            numTasks: 10
+          });
 
-        if (!parseResponse.ok) {
-          const error = await parseResponse.json();
-          throw new Error(error.message || 'Failed to generate tasks');
-        }
+          if (!parseResponse.ok) {
+            const error = await parseResponse.json();
+            throw new Error(error.message || 'Failed to generate tasks');
+          }
 
-        setStep('generate');
-        setTimeout(() => {
-          onTemplateApplied();
-        }, 2000);
-      }, 'applying', 'template-apply');
+          setStep('generate');
+          setTimeout(() => {
+            onTemplateApplied();
+          }, 2000);
+        },
+        'applying',
+        'template-apply'
+      );
     } catch (error) {
       console.error('Error applying template:', error);
       alert(`Error: ${error.message}`);

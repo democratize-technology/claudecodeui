@@ -1,4 +1,3 @@
-;
 import { CheckCircle, Settings, X, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
 

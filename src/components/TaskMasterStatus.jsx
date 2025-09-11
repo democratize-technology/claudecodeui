@@ -1,4 +1,3 @@
-;
 import { useTaskMaster } from '../contexts/TaskMasterContext';
 import TaskIndicator from './TaskIndicator';
 

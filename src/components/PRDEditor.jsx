@@ -29,14 +29,14 @@ const PRDEditor = ({
 }) => {
   const [content, setContent] = useState(initialContent);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   const {
     loadingLoading: loading,
     savingLoading: saving,
     executeNamedAsync,
     setLoadingLoading: setLoading
   } = useMultipleLoadingStates(['loading', 'saving']);
-  
+
   // Initialize loading state for existing files
   useEffect(() => {
     if (!isNewFile) {
@@ -341,16 +341,20 @@ This document outlines the requirements for building an AI-powered task manageme
 
       // Fallback to loading from file path (legacy support)
       try {
-        await executeNamedAsync(async () => {
-          const response = await api.readFile(file.projectName, file.path);
+        await executeNamedAsync(
+          async () => {
+            const response = await api.readFile(file.projectName, file.path);
 
-          if (!response.ok) {
-            throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
-          }
+            if (!response.ok) {
+              throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
+            }
 
-          const data = await response.json();
-          setContent(data.content || PRD_TEMPLATE);
-        }, 'loading', 'prd-file-load');
+            const data = await response.json();
+            setContent(data.content || PRD_TEMPLATE);
+          },
+          'loading',
+          'prd-file-load'
+        );
       } catch (error) {
         console.error('Error loading PRD file:', error);
         setContent(
@@ -425,43 +429,47 @@ This document outlines the requirements for building an AI-powered task manageme
 
   const performSave = async () => {
     try {
-      await executeNamedAsync(async () => {
-        // Ensure filename has .txt extension
-        const fullFileName =
-          fileName.endsWith('.txt') || fileName.endsWith('.md') ? fileName : `${fileName}.txt`;
+      await executeNamedAsync(
+        async () => {
+          // Ensure filename has .txt extension
+          const fullFileName =
+            fileName.endsWith('.txt') || fileName.endsWith('.md') ? fileName : `${fileName}.txt`;
 
-        const response = await authenticatedFetch(
-          `/api/taskmaster/prd/${encodeURIComponent(project?.name)}`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              fileName: fullFileName,
-              content
-            })
+          const response = await authenticatedFetch(
+            `/api/taskmaster/prd/${encodeURIComponent(project?.name)}`,
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                fileName: fullFileName,
+                content
+              })
+            }
+          );
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Save failed: ${response.status}`);
           }
-        );
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `Save failed: ${response.status}`);
-        }
+          // Show success feedback
+          setSaveSuccess(true);
+          setTimeout(() => setSaveSuccess(false), 2000);
 
-        // Show success feedback
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 2000);
+          // Update existing PRDs list
+          const response2 = await api.get(`/taskmaster/prd/${encodeURIComponent(project.name)}`);
+          if (response2.ok) {
+            const data = await response2.json();
+            setExistingPRDs(data.prds || []);
+          }
 
-        // Update existing PRDs list
-        const response2 = await api.get(`/taskmaster/prd/${encodeURIComponent(project.name)}`);
-        if (response2.ok) {
-          const data = await response2.json();
-          setExistingPRDs(data.prds || []);
-        }
-
-        // Call the onSave callback if provided (for UI updates)
-        if (onSave) {
-          await onSave();
-        }
-      }, 'saving', 'prd-file-save');
+          // Call the onSave callback if provided (for UI updates)
+          if (onSave) {
+            await onSave();
+          }
+        },
+        'saving',
+        'prd-file-save'
+      );
     } catch (error) {
       console.error('Error saving PRD:', error);
       alert(`Error saving PRD: ${error.message}`);

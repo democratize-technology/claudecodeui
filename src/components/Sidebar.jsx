@@ -374,25 +374,29 @@ function Sidebar({
     }
 
     try {
-      await executeNamedAsync(async () => {
-        const response = await api.createProject(newProjectPath.trim());
+      await executeNamedAsync(
+        async () => {
+          const response = await api.createProject(newProjectPath.trim());
 
-        if (response.ok) {
-          const result = await response.json();
-          setShowNewProject(false);
-          setNewProjectPath('');
+          if (response.ok) {
+            const result = await response.json();
+            setShowNewProject(false);
+            setNewProjectPath('');
 
-          // Refresh projects to show the new one
-          if (window.refreshProjects) {
-            window.refreshProjects();
+            // Refresh projects to show the new one
+            if (window.refreshProjects) {
+              window.refreshProjects();
+            } else {
+              window.location.reload();
+            }
           } else {
-            window.location.reload();
+            const error = await response.json();
+            alert(error.error || 'Failed to create project. Please try again.');
           }
-        } else {
-          const error = await response.json();
-          alert(error.error || 'Failed to create project. Please try again.');
-        }
-      }, 'creatingProject', 'project-create');
+        },
+        'creatingProject',
+        'project-create'
+      );
     } catch (error) {
       console.error('Error creating project:', error);
       alert('Error creating project. Please try again.');
@@ -484,9 +488,13 @@ function Sidebar({
               className='h-9 w-9 px-0 hover:bg-accent transition-colors duration-200 group'
               onClick={async () => {
                 try {
-                  await executeNamedAsync(async () => {
-                    await onRefresh();
-                  }, 'refreshing', 'projects-refresh');
+                  await executeNamedAsync(
+                    async () => {
+                      await onRefresh();
+                    },
+                    'refreshing',
+                    'projects-refresh'
+                  );
                 } catch (error) {
                   console.error('Error refreshing:', error);
                 }
@@ -527,9 +535,13 @@ function Sidebar({
                 className='w-8 h-8 rounded-md bg-background border border-border flex items-center justify-center active:scale-95 transition-all duration-150'
                 onClick={async () => {
                   try {
-                    await executeNamedAsync(async () => {
-                      await onRefresh();
-                    }, 'refreshing', 'projects-refresh');
+                    await executeNamedAsync(
+                      async () => {
+                        await onRefresh();
+                      },
+                      'refreshing',
+                      'projects-refresh'
+                    );
                   } catch (error) {
                     console.error('Error refreshing:', error);
                   }

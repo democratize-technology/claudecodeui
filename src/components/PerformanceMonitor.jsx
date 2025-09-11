@@ -30,7 +30,7 @@ class PerformanceMetrics {
     this.metrics.renderCount++;
     this.metrics.totalRenderTime += renderTime;
     this.metrics.lastRenderTime = renderTime;
-    
+
     // Update memory usage if available
     if (performance.memory) {
       this.metrics.memoryUsage = performance.memory.usedJSHeapSize;
@@ -46,8 +46,8 @@ class PerformanceMetrics {
   }
 
   getAverageRenderTime() {
-    return this.metrics.renderCount > 0 
-      ? this.metrics.totalRenderTime / this.metrics.renderCount 
+    return this.metrics.renderCount > 0
+      ? this.metrics.totalRenderTime / this.metrics.renderCount
       : 0;
   }
 
@@ -85,13 +85,13 @@ class FPSCounter {
     const tick = () => {
       this.frames++;
       const currentTime = performance.now();
-      
+
       if (currentTime >= this.lastTime + 1000) {
         this.fps = Math.round((this.frames * 1000) / (currentTime - this.lastTime));
         this.frames = 0;
         this.lastTime = currentTime;
       }
-      
+
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -108,7 +108,7 @@ const globalPerformanceTracker = new PerformanceMetrics();
 // Hook for components to track their performance
 export function usePerformanceTracking(componentName) {
   const renderCountRef = useRef(0);
-  
+
   useEffect(() => {
     globalPerformanceTracker.componentMounted();
     return () => {
@@ -158,12 +158,12 @@ const PerformanceMonitor = memo(() => {
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
   const getPerformanceColor = (value, thresholds) => {
     if (value <= thresholds.good) return 'text-green-600';
-    if (value <= thresholds.warning) return 'text-yellow-600'; 
+    if (value <= thresholds.warning) return 'text-yellow-600';
     return 'text-red-600';
   };
 
@@ -178,32 +178,36 @@ const PerformanceMonitor = memo(() => {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className='fixed top-4 right-4 z-50'>
       {/* Toggle Button */}
       <button
         onClick={() => setIsVisible(!isVisible)}
-        className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 shadow-lg transition-colors mb-2"
-        title="Performance Monitor"
+        className='bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 shadow-lg transition-colors mb-2'
+        title='Performance Monitor'
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+          <path
+            strokeLinecap='round'
+            strokeLinejoin='round'
+            strokeWidth={2}
+            d='M13 10V3L4 14h7v7l9-11h-7z'
+          />
         </svg>
       </button>
 
       {/* Performance Panel */}
       {isVisible && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 min-w-80 max-w-md">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+        <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-4 min-w-80 max-w-md'>
+          <div className='flex items-center justify-between mb-4'>
+            <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
               Performance Monitor
             </h3>
-            <div className="flex gap-2">
+            <div className='flex gap-2'>
               <button
                 onClick={() => setAutoUpdate(!autoUpdate)}
                 className={`px-2 py-1 rounded text-xs ${
-                  autoUpdate 
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                  autoUpdate
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
                 }`}
               >
@@ -211,48 +215,54 @@ const PerformanceMonitor = memo(() => {
               </button>
               <button
                 onClick={resetMetrics}
-                className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded text-xs"
+                className='px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded text-xs'
               >
                 Reset
               </button>
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className='space-y-3'>
             {/* Render Performance */}
-            <div className="border-b border-gray-200 dark:border-gray-600 pb-2">
-              <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <div className='border-b border-gray-200 dark:border-gray-600 pb-2'>
+              <h4 className='font-medium text-gray-700 dark:text-gray-300 mb-1'>
                 Render Performance
               </h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className='grid grid-cols-2 gap-2 text-sm'>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Renders:</span>
-                  <span className="ml-1 font-mono">{metrics.renderCount}</span>
+                  <span className='text-gray-600 dark:text-gray-400'>Renders:</span>
+                  <span className='ml-1 font-mono'>{metrics.renderCount}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Avg Time:</span>
-                  <span className={`ml-1 font-mono ${getPerformanceColor(
-                    metrics.averageRenderTime, 
-                    { good: 16, warning: 33 }
-                  )}`}>
+                  <span className='text-gray-600 dark:text-gray-400'>Avg Time:</span>
+                  <span
+                    className={`ml-1 font-mono ${getPerformanceColor(metrics.averageRenderTime, {
+                      good: 16,
+                      warning: 33
+                    })}`}
+                  >
                     {metrics.averageRenderTime.toFixed(2)}ms
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Last:</span>
-                  <span className={`ml-1 font-mono ${getPerformanceColor(
-                    metrics.lastRenderTime,
-                    { good: 16, warning: 33 }
-                  )}`}>
+                  <span className='text-gray-600 dark:text-gray-400'>Last:</span>
+                  <span
+                    className={`ml-1 font-mono ${getPerformanceColor(metrics.lastRenderTime, {
+                      good: 16,
+                      warning: 33
+                    })}`}
+                  >
                     {metrics.lastRenderTime.toFixed(2)}ms
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">FPS:</span>
-                  <span className={`ml-1 font-mono ${getPerformanceColor(
-                    60 - metrics.fps,
-                    { good: 5, warning: 15 }
-                  )}`}>
+                  <span className='text-gray-600 dark:text-gray-400'>FPS:</span>
+                  <span
+                    className={`ml-1 font-mono ${getPerformanceColor(60 - metrics.fps, {
+                      good: 5,
+                      warning: 15
+                    })}`}
+                  >
                     {metrics.fps}
                   </span>
                 </div>
@@ -260,34 +270,32 @@ const PerformanceMonitor = memo(() => {
             </div>
 
             {/* Component Tracking */}
-            <div className="border-b border-gray-200 dark:border-gray-600 pb-2">
-              <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Components
-              </h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className='border-b border-gray-200 dark:border-gray-600 pb-2'>
+              <h4 className='font-medium text-gray-700 dark:text-gray-300 mb-1'>Components</h4>
+              <div className='grid grid-cols-2 gap-2 text-sm'>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Mounted:</span>
-                  <span className="ml-1 font-mono text-green-600">{metrics.componentMounts}</span>
+                  <span className='text-gray-600 dark:text-gray-400'>Mounted:</span>
+                  <span className='ml-1 font-mono text-green-600'>{metrics.componentMounts}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600 dark:text-gray-400">Unmounted:</span>
-                  <span className="ml-1 font-mono text-red-600">{metrics.componentUnmounts}</span>
+                  <span className='text-gray-600 dark:text-gray-400'>Unmounted:</span>
+                  <span className='ml-1 font-mono text-red-600'>{metrics.componentUnmounts}</span>
                 </div>
               </div>
             </div>
 
             {/* Memory Usage */}
             {metrics.memoryUsage > 0 && (
-              <div className="border-b border-gray-200 dark:border-gray-600 pb-2">
-                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Memory Usage
-                </h4>
-                <div className="text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Heap:</span>
-                  <span className={`ml-1 font-mono ${getPerformanceColor(
-                    metrics.memoryUsage / (1024 * 1024),
-                    { good: 50, warning: 100 }
-                  )}`}>
+              <div className='border-b border-gray-200 dark:border-gray-600 pb-2'>
+                <h4 className='font-medium text-gray-700 dark:text-gray-300 mb-1'>Memory Usage</h4>
+                <div className='text-sm'>
+                  <span className='text-gray-600 dark:text-gray-400'>Heap:</span>
+                  <span
+                    className={`ml-1 font-mono ${getPerformanceColor(
+                      metrics.memoryUsage / (1024 * 1024),
+                      { good: 50, warning: 100 }
+                    )}`}
+                  >
                     {formatBytes(metrics.memoryUsage)}
                   </span>
                 </div>
@@ -296,21 +304,21 @@ const PerformanceMonitor = memo(() => {
 
             {/* Performance Tips */}
             <div>
-              <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Quick Tips
-              </h4>
-              <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+              <h4 className='font-medium text-gray-700 dark:text-gray-300 mb-1'>Quick Tips</h4>
+              <div className='text-xs text-gray-600 dark:text-gray-400 space-y-1'>
                 {metrics.averageRenderTime > 16 && (
-                  <div className="text-yellow-600">• Consider using React.memo() or useMemo()</div>
+                  <div className='text-yellow-600'>• Consider using React.memo() or useMemo()</div>
                 )}
                 {metrics.renderCount > 50 && (
-                  <div className="text-yellow-600">• High render count - check unnecessary re-renders</div>
+                  <div className='text-yellow-600'>
+                    • High render count - check unnecessary re-renders
+                  </div>
                 )}
                 {metrics.fps < 50 && (
-                  <div className="text-red-600">• Low FPS detected - performance issue</div>
+                  <div className='text-red-600'>• Low FPS detected - performance issue</div>
                 )}
                 {metrics.memoryUsage / (1024 * 1024) > 100 && (
-                  <div className="text-red-600">• High memory usage - check for memory leaks</div>
+                  <div className='text-red-600'>• High memory usage - check for memory leaks</div>
                 )}
               </div>
             </div>

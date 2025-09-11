@@ -1,4 +1,3 @@
-;
 import { useTheme } from '../contexts/ThemeContext';
 
 function DarkModeToggle() {

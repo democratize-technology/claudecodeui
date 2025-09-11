@@ -1,4 +1,3 @@
-;
 import {
   Clock,
   CheckCircle,
@@ -8,7 +7,8 @@ import {
   X,
   ArrowRight,
   ChevronUp,
-  Minus} from 'lucide-react';
+  Minus
+} from 'lucide-react';
 import { cn } from '../lib/utils';
 import Tooltip from './Tooltip';
 

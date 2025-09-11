@@ -1,4 +1,3 @@
-;
 import { useAuth } from '../contexts/AuthContext';
 import SetupForm from './SetupForm';
 import LoginForm from './LoginForm';

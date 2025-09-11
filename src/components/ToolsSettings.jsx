@@ -61,18 +61,18 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
     jsonInput: '', // For JSON import
     importMode: 'form' // 'form' or 'json'
   });
-  
+
   // Loading state management with support for both single and multiple server loading states
-  const { 
-    isLoading: mcpLoading, 
-    executeAsync, 
-    setNamedLoading, 
-    getLoadingState, 
+  const {
+    isLoading: mcpLoading,
+    executeAsync,
+    setNamedLoading,
+    getLoadingState,
     executeNamedAsync,
-    withLoading, 
-    getLoadingText 
+    withLoading,
+    getLoadingText
   } = useLoadingState({ multipleStates: true });
-  
+
   const [mcpTestResults, setMcpTestResults] = useState({});
   const [mcpServerTools, setMcpServerTools] = useState({});
   // mcpToolsLoading is now handled by the useLoadingState hook via getLoadingState(serverId)
@@ -517,10 +517,14 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
 
   const handleMcpToolsDiscovery = async (serverId, scope) => {
     try {
-      await executeNamedAsync(async () => {
-        const result = await discoverMcpTools(serverId, scope);
-        setMcpServerTools({ ...mcpServerTools, [serverId]: result });
-      }, serverId, `tools-discovery-${serverId}`);
+      await executeNamedAsync(
+        async () => {
+          const result = await discoverMcpTools(serverId, scope);
+          setMcpServerTools({ ...mcpServerTools, [serverId]: result });
+        },
+        serverId,
+        `tools-discovery-${serverId}`
+      );
     } catch (error) {
       setMcpServerTools({
         ...mcpServerTools,

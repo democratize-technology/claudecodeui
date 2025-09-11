@@ -16,7 +16,7 @@ import { useMultipleLoadingStates } from '../utils/hooks/useLoadingState';
 function CodeEditor({ file, onClose, projectPath }) {
   const [content, setContent] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   const {
     loadingLoading: loading,
     savingLoading: saving,
@@ -147,16 +147,20 @@ function CodeEditor({ file, onClose, projectPath }) {
   useEffect(() => {
     const loadFileContent = async () => {
       try {
-        await executeNamedAsync(async () => {
-          const response = await api.readFile(file.projectName, file.path);
+        await executeNamedAsync(
+          async () => {
+            const response = await api.readFile(file.projectName, file.path);
 
-          if (!response.ok) {
-            throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
-          }
+            if (!response.ok) {
+              throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
+            }
 
-          const data = await response.json();
-          setContent(data.content);
-        }, 'loading', 'code-file-load');
+            const data = await response.json();
+            setContent(data.content);
+          },
+          'loading',
+          'code-file-load'
+        );
       } catch (error) {
         console.error('Error loading file:', error);
         setContent(
@@ -185,20 +189,24 @@ function CodeEditor({ file, onClose, projectPath }) {
 
   const handleSave = async () => {
     try {
-      await executeNamedAsync(async () => {
-        const response = await api.saveFile(file.projectName, file.path, content);
+      await executeNamedAsync(
+        async () => {
+          const response = await api.saveFile(file.projectName, file.path, content);
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Save failed: ${response.status}`);
-        }
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `Save failed: ${response.status}`);
+          }
 
-        const result = await response.json();
+          const result = await response.json();
 
-        // Show success feedback
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 2000); // Hide after 2 seconds
-      }, 'saving', 'code-file-save');
+          // Show success feedback
+          setSaveSuccess(true);
+          setTimeout(() => setSaveSuccess(false), 2000); // Hide after 2 seconds
+        },
+        'saving',
+        'code-file-save'
+      );
     } catch (error) {
       console.error('Error saving file:', error);
       alert(`Error saving file: ${error.message}`);

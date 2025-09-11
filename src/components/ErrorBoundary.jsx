@@ -4,10 +4,10 @@ import { processErrorBoundaryError, ERROR_SEVERITY } from '../utils/errorHandlin
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { 
-      hasError: false, 
-      error: null, 
-      errorInfo: null, 
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
       processedError: null,
       retryCount: 0
     };
@@ -21,7 +21,7 @@ class ErrorBoundary extends React.Component {
   componentDidCatch(error, errorInfo) {
     // Process error with standardized error handling
     const processedError = processErrorBoundaryError(error, errorInfo);
-    
+
     // Store both original and processed error information
     this.setState({
       error: error,
@@ -40,8 +40,8 @@ class ErrorBoundary extends React.Component {
     // This helps with cases where parent components re-render with new children
     // Only reset if we manually clicked "Try Again" (retryCount > 0) and props changed
     if (
-      this.state.hasError && 
-      this.state.retryCount > 0 && 
+      this.state.hasError &&
+      this.state.retryCount > 0 &&
       prevProps.children !== this.props.children
     ) {
       this.setState({
@@ -74,27 +74,32 @@ class ErrorBoundary extends React.Component {
             <div className='text-sm text-red-700'>
               {/* Show user-friendly message from standardized error handling */}
               <p className='mb-2'>
-                {this.state.processedError?.userMessage || 'An error occurred while loading the interface.'}
+                {this.state.processedError?.userMessage ||
+                  'An error occurred while loading the interface.'}
               </p>
-              
+
               {/* Show error ID for tracking */}
               {this.state.processedError?.id && (
                 <p className='text-xs text-red-600 mb-2 font-mono'>
                   Error ID: {this.state.processedError.id}
                 </p>
               )}
-              
+
               {/* Show severity indicator */}
               {this.state.processedError?.severity && (
-                <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mb-2 ${
-                  this.state.processedError.severity === ERROR_SEVERITY.CRITICAL ? 'bg-red-200 text-red-800' :
-                  this.state.processedError.severity === ERROR_SEVERITY.HIGH ? 'bg-orange-200 text-orange-800' :
-                  'bg-yellow-200 text-yellow-800'
-                }`}>
+                <div
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mb-2 ${
+                    this.state.processedError.severity === ERROR_SEVERITY.CRITICAL
+                      ? 'bg-red-200 text-red-800'
+                      : this.state.processedError.severity === ERROR_SEVERITY.HIGH
+                        ? 'bg-orange-200 text-orange-800'
+                        : 'bg-yellow-200 text-yellow-800'
+                  }`}
+                >
                   {this.state.processedError.severity.toUpperCase()} ERROR
                 </div>
               )}
-              
+
               {this.props.showDetails && this.state.error && (
                 <details className='mt-4'>
                   <summary className='cursor-pointer text-xs font-mono'>Technical Details</summary>
@@ -109,13 +114,16 @@ class ErrorBoundary extends React.Component {
                     )}
                     {this.state.processedError?.timestamp && (
                       <div className='mb-2'>
-                        <strong>Time:</strong> {new Date(this.state.processedError.timestamp).toLocaleString()}
+                        <strong>Time:</strong>{' '}
+                        {new Date(this.state.processedError.timestamp).toLocaleString()}
                       </div>
                     )}
                     {this.state.errorInfo && this.state.errorInfo.componentStack && (
                       <div>
                         <strong>Component Stack:</strong>
-                        <pre className='mt-1 whitespace-pre-wrap'>{this.state.errorInfo.componentStack}</pre>
+                        <pre className='mt-1 whitespace-pre-wrap'>
+                          {this.state.errorInfo.componentStack}
+                        </pre>
                       </div>
                     )}
                   </div>
@@ -127,10 +135,10 @@ class ErrorBoundary extends React.Component {
                 onClick={() => {
                   // Call onRetry callback before state update
                   if (this.props.onRetry) this.props.onRetry();
-                  
+
                   // Use functional setState to prevent race conditions
                   // This ensures atomic state update with correct retryCount increment
-                  this.setState(prevState => ({
+                  this.setState((prevState) => ({
                     hasError: false,
                     error: null,
                     errorInfo: null,

@@ -1,4 +1,3 @@
-;
 import { X, Sparkles } from 'lucide-react';
 
 const CreateTaskModal = ({ currentProject, onClose, onTaskCreated }) => {
