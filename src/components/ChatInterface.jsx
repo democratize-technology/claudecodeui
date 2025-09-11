@@ -1430,6 +1430,21 @@ function ChatInterface({
     }
   });
 
+  // Initialize error handling for Cursor service integration
+  const cursorErrorHandler = useErrorHandler({
+    defaultCategory: ERROR_CATEGORIES.EXTERNAL_SERVICE,
+    defaultSeverity: ERROR_SEVERITY.LOW, // Cursor failures shouldn't be critical
+    showToast: true,
+    autoReset: true,
+    resetDelay: 5000,
+    onError: (processedError) => {
+      // Log Cursor integration issues for debugging but don't alarm users
+      if (processedError.severity >= ERROR_SEVERITY.MEDIUM) {
+        console.warn('Cursor service issue:', processedError.userMessage);
+      }
+    }
+  });
+
   // Enhanced storage manager with proper error handling and user feedback
   const enhancedStorageManager = useMemo(() => ({
     setItem: (key, value) => {
@@ -1656,7 +1671,12 @@ function ChatInterface({
             }
           }
         })
-        .catch((err) => console.error('Error loading Cursor config:', err));
+        .catch((err) => 
+          cursorErrorHandler.reportError(err, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
+            operation: 'cursor_config_load',
+            context: 'initialization'
+          })
+        );
     }
   }, [provider]);
 
@@ -2038,7 +2058,11 @@ function ChatInterface({
 
       return converted;
     } catch (e) {
-      console.error('Error loading Cursor session messages:', e);
+      cursorErrorHandler.reportError(e, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.MEDIUM, {
+        operation: 'cursor_session_messages_load',
+        sessionId: cursorSessionId,
+        context: 'session_initialization'
+      });
       return [];
     } finally {
       setIsLoadingSessionMessages(false);
@@ -2689,7 +2713,11 @@ function ChatInterface({
             }
             // For other cursor-system messages, avoid dumping raw objects to chat
           } catch (e) {
-            console.warn('Error handling cursor-system message:', e);
+            cursorErrorHandler.reportError(e, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
+              operation: 'cursor_system_message_handling',
+              messageType: 'cursor-system',
+              context: 'real_time_updates'
+            });
           }
           break;
 
@@ -2764,7 +2792,11 @@ function ChatInterface({
               return updated;
             });
           } catch (e) {
-            console.warn('Error handling cursor-result message:', e);
+            cursorErrorHandler.reportError(e, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
+              operation: 'cursor_result_message_handling',
+              messageType: 'cursor-result',
+              context: 'real_time_updates'
+            });
           }
 
           // Mark session as inactive
@@ -2820,7 +2852,11 @@ function ChatInterface({
               }
             }
           } catch (e) {
-            console.warn('Error handling cursor-output message:', e);
+            cursorErrorHandler.reportError(e, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
+              operation: 'cursor_output_message_handling',
+              messageType: 'cursor-output',
+              context: 'real_time_updates'
+            });
           }
           break;
 
@@ -2931,7 +2967,11 @@ function ChatInterface({
       try {
         sessionStorage.setItem('cursorSessionId', cachedSessionId);
       } catch (e) {
-        console.warn('Failed to update cursorSessionId:', e);
+        cursorErrorHandler.reportError(e, ERROR_CATEGORIES.EXTERNAL_SERVICE, ERROR_SEVERITY.LOW, {
+          operation: 'cursor_session_id_update',
+          sessionId: sessionId,
+          context: 'session_management'
+        });
       }
     }
   }, [cachedSessionId]);
