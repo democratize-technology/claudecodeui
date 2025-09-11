@@ -288,4 +288,4 @@ export async function withFallback(operation, fallbackValue, category = ERROR_CA
 }
 
 // Export error handling hook for React components
-export { useErrorHandler } from './hooks/useErrorHandler';
+export { useErrorHandler } from './hooks/useErrorHandler.jsx';

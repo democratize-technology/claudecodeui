@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useErrorHandler } from '../utils/hooks/useErrorHandler';
+import { useErrorHandler } from '../utils/hooks/useErrorHandler.jsx';
 import { ERROR_CATEGORIES, ERROR_SEVERITY } from '../utils/errorHandling';
 
 const TasksSettingsContext = createContext({

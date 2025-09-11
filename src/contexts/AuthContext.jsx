@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useErrorHandler } from '../utils/hooks/useErrorHandler';
+import { useErrorHandler } from '../utils/hooks/useErrorHandler.jsx';
 import { ERROR_CATEGORIES, ERROR_SEVERITY, withRetry } from '../utils/errorHandling';
 
 const AuthContext = createContext({
