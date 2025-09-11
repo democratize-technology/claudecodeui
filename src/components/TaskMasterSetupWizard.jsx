@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { api } from '../utils/api';
+import { useLoadingState } from '../utils/hooks/useLoadingState';
 
 const TaskMasterSetupWizard = ({
   isOpen = true,
@@ -23,8 +24,9 @@ const TaskMasterSetupWizard = ({
   className = ''
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  const { isLoading: loading, executeAsync } = useLoadingState();
   const [setupData, setSetupData] = useState({
     projectRoot: '',
     initGit: true,
@@ -83,20 +85,21 @@ const TaskMasterSetupWizard = ({
         setCurrentStep(2);
       } else if (currentStep === 2) {
         // Check MCP server status
-        setLoading(true);
-        try {
-          const mcpStatus = await api.get('/mcp-utils/taskmaster-server');
-          setSetupData((prev) => ({
-            ...prev,
-            mcpConfigured: mcpStatus.hasMCPServer && mcpStatus.isConfigured
-          }));
-          setCurrentStep(3);
-        } catch (err) {
-          setError(
-            'Failed to check MCP server status. You can continue but some features may not work.'
-          );
-          setCurrentStep(3);
-        }
+        await executeAsync(async () => {
+          try {
+            const mcpStatus = await api.get('/mcp-utils/taskmaster-server');
+            setSetupData((prev) => ({
+              ...prev,
+              mcpConfigured: mcpStatus.hasMCPServer && mcpStatus.isConfigured
+            }));
+            setCurrentStep(3);
+          } catch (err) {
+            setError(
+              'Failed to check MCP server status. You can continue but some features may not work.'
+            );
+            setCurrentStep(3);
+          }
+        }, 'mcp-server-check');
       } else if (currentStep === 3) {
         // Validate PRD step
         if (!setupData.prdContent.trim()) {
@@ -110,8 +113,6 @@ const TaskMasterSetupWizard = ({
       }
     } catch (err) {
       setError(err.message || 'An error occurred');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -123,56 +124,55 @@ const TaskMasterSetupWizard = ({
   };
 
   const completeSetup = async () => {
-    setLoading(true);
     try {
-      // Initialize TaskMaster project
-      const initResponse = await api.post('/taskmaster/initialize', {
-        projectRoot: setupData.projectRoot,
-        initGit: setupData.initGit,
-        storeTasksInGit: setupData.storeTasksInGit,
-        addAliases: setupData.addAliases,
-        skipInstall: setupData.skipInstall,
-        rules: setupData.rules,
-        yes: true
-      });
-
-      if (!initResponse.ok) {
-        throw new Error('Failed to initialize TaskMaster project');
-      }
-
-      // Save PRD content if provided
-      if (setupData.prdContent.trim()) {
-        const prdResponse = await api.post('/taskmaster/save-prd', {
+      await executeAsync(async () => {
+        // Initialize TaskMaster project
+        const initResponse = await api.post('/taskmaster/initialize', {
           projectRoot: setupData.projectRoot,
-          content: setupData.prdContent
+          initGit: setupData.initGit,
+          storeTasksInGit: setupData.storeTasksInGit,
+          addAliases: setupData.addAliases,
+          skipInstall: setupData.skipInstall,
+          rules: setupData.rules,
+          yes: true
         });
 
-        if (!prdResponse.ok) {
-          console.warn('Failed to save PRD content');
+        if (!initResponse.ok) {
+          throw new Error('Failed to initialize TaskMaster project');
         }
-      }
 
-      // Parse PRD to generate initial tasks
-      if (setupData.prdContent.trim()) {
-        const parseResponse = await api.post('/taskmaster/parse-prd', {
-          projectRoot: setupData.projectRoot,
-          input: '.taskmaster/docs/prd.txt',
-          numTasks: '10',
-          research: false,
-          force: false
-        });
+        // Save PRD content if provided
+        if (setupData.prdContent.trim()) {
+          const prdResponse = await api.post('/taskmaster/save-prd', {
+            projectRoot: setupData.projectRoot,
+            content: setupData.prdContent
+          });
 
-        if (!parseResponse.ok) {
-          console.warn('Failed to parse PRD and generate tasks');
+          if (!prdResponse.ok) {
+            console.warn('Failed to save PRD content');
+          }
         }
-      }
 
-      onComplete?.();
-      onClose?.();
+        // Parse PRD to generate initial tasks
+        if (setupData.prdContent.trim()) {
+          const parseResponse = await api.post('/taskmaster/parse-prd', {
+            projectRoot: setupData.projectRoot,
+            input: '.taskmaster/docs/prd.txt',
+            numTasks: '10',
+            research: false,
+            force: false
+          });
+
+          if (!parseResponse.ok) {
+            console.warn('Failed to parse PRD and generate tasks');
+          }
+        }
+
+        onComplete?.();
+        onClose?.();
+      }, 'taskmaster-setup-complete');
     } catch (err) {
       setError(err.message || 'Failed to complete TaskMaster setup');
-    } finally {
-      setLoading(false);
     }
   };
 

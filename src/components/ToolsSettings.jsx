@@ -21,6 +21,7 @@ import {
 import { api } from '../utils/api';
 import { useTheme } from '../contexts/ThemeContext';
 import { useTasksSettings } from '../contexts/TasksSettingsContext';
+import { useLoadingState } from '../utils/hooks/useLoadingState';
 
 function ToolsSettings({ isOpen, onClose, projects = [] }) {
   const { isDarkMode, toggleDarkMode } = useTheme();
@@ -60,10 +61,21 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
     jsonInput: '', // For JSON import
     importMode: 'form' // 'form' or 'json'
   });
-  const [mcpLoading, setMcpLoading] = useState(false);
+  
+  // Loading state management with support for both single and multiple server loading states
+  const { 
+    isLoading: mcpLoading, 
+    executeAsync, 
+    setNamedLoading, 
+    getLoadingState, 
+    executeNamedAsync,
+    withLoading, 
+    getLoadingText 
+  } = useLoadingState({ multipleStates: true });
+  
   const [mcpTestResults, setMcpTestResults] = useState({});
   const [mcpServerTools, setMcpServerTools] = useState({});
-  const [mcpToolsLoading, setMcpToolsLoading] = useState({});
+  // mcpToolsLoading is now handled by the useLoadingState hook via getLoadingState(serverId)
   const [activeTab, setActiveTab] = useState('tools');
   const [jsonValidationError, setJsonValidationError] = useState('');
   const [toolsProvider, setToolsProvider] = useState('claude'); // 'claude' or 'cursor'
@@ -437,42 +449,40 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
   const handleMcpSubmit = async (e) => {
     e.preventDefault();
 
-    setMcpLoading(true);
-
     try {
-      if (mcpFormData.importMode === 'json') {
-        // Use JSON import endpoint
-        const response = await api.mcp.cli.addJson({
-          name: mcpFormData.name,
-          jsonConfig: mcpFormData.jsonInput,
-          scope: mcpFormData.scope,
-          projectPath: mcpFormData.projectPath
-        });
+      await executeAsync(async () => {
+        if (mcpFormData.importMode === 'json') {
+          // Use JSON import endpoint
+          const response = await api.mcp.cli.addJson({
+            name: mcpFormData.name,
+            jsonConfig: mcpFormData.jsonInput,
+            scope: mcpFormData.scope,
+            projectPath: mcpFormData.projectPath
+          });
 
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success) {
-            await fetchMcpServers(); // Refresh the list
-            resetMcpForm();
-            setSaveStatus('success');
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              await fetchMcpServers(); // Refresh the list
+              resetMcpForm();
+              setSaveStatus('success');
+            } else {
+              throw new Error(result.error || 'Failed to add server via JSON');
+            }
           } else {
-            throw new Error(result.error || 'Failed to add server via JSON');
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to add server');
           }
         } else {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to add server');
+          // Use regular form-based save
+          await saveMcpServer(mcpFormData);
+          resetMcpForm();
+          setSaveStatus('success');
         }
-      } else {
-        // Use regular form-based save
-        await saveMcpServer(mcpFormData);
-        resetMcpForm();
-        setSaveStatus('success');
-      }
+      }, 'mcp-submit');
     } catch (error) {
       alert(`Error: ${error.message}`);
       setSaveStatus('error');
-    } finally {
-      setMcpLoading(false);
     }
   };
 
@@ -507,9 +517,10 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
 
   const handleMcpToolsDiscovery = async (serverId, scope) => {
     try {
-      setMcpToolsLoading({ ...mcpToolsLoading, [serverId]: true });
-      const result = await discoverMcpTools(serverId, scope);
-      setMcpServerTools({ ...mcpServerTools, [serverId]: result });
+      await executeNamedAsync(async () => {
+        const result = await discoverMcpTools(serverId, scope);
+        setMcpServerTools({ ...mcpServerTools, [serverId]: result });
+      }, serverId, `tools-discovery-${serverId}`);
     } catch (error) {
       setMcpServerTools({
         ...mcpServerTools,
@@ -520,8 +531,6 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
           prompts: []
         }
       });
-    } finally {
-      setMcpToolsLoading({ ...mcpToolsLoading, [serverId]: false });
     }
   };
 
@@ -1576,15 +1585,15 @@ function ToolsSettings({ isOpen, onClose, projects = [] }) {
                                 Cancel
                               </Button>
                               <Button
-                                type='submit'
-                                disabled={mcpLoading}
-                                className='bg-purple-600 hover:bg-purple-700 disabled:opacity-50'
+                                {...withLoading({
+                                  type: 'submit',
+                                  className: 'bg-purple-600 hover:bg-purple-700 disabled:opacity-50'
+                                })}
                               >
-                                {mcpLoading
-                                  ? 'Saving...'
-                                  : editingMcpServer
-                                    ? 'Update Server'
-                                    : 'Add Server'}
+                                {getLoadingText(
+                                  editingMcpServer ? 'Update Server' : 'Add Server',
+                                  'Saving...'
+                                )}
                               </Button>
                             </div>
                           </form>

@@ -19,15 +19,44 @@ import {
 } from 'lucide-react';
 import { Button } from './ui/button.jsx';
 import { authenticatedFetch } from '../utils/api';
+import { useMultipleLoadingStates } from '../utils/hooks/useLoadingState';
 
 function GitPanel({ selectedProject, isMobile }) {
+  // Multiple loading states for different git operations
+  const {
+    // Loading state getters
+    loadingLoading: isLoading,
+    committingLoading: isCommitting, 
+    creatingBranchLoading: isCreatingBranch,
+    generatingMessageLoading: isGeneratingMessage,
+    fetchingLoading: isFetching,
+    pullingLoading: isPulling,
+    pushingLoading: isPushing,
+    publishingLoading: isPublishing,
+    // Loading state setters  
+    setLoadingLoading: setIsLoading,
+    setCommittingLoading: setIsCommitting,
+    setCreatingBranchLoading: setIsCreatingBranch, 
+    setGeneratingMessageLoading: setIsGeneratingMessage,
+    setFetchingLoading: setIsFetching,
+    setPullingLoading: setIsPulling,
+    setPushingLoading: setIsPushing,
+    setPublishingLoading: setIsPublishing,
+    // Hook utilities
+    executeAsync,
+    executeNamedAsync,
+    withLoading,
+    getLoadingText
+  } = useMultipleLoadingStates([
+    'loading', 'committing', 'creatingBranch', 'generatingMessage', 
+    'fetching', 'pulling', 'pushing', 'publishing'
+  ]);
+
   const [gitStatus, setGitStatus] = useState(null);
   const [gitDiff, setGitDiff] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
   const [commitMessage, setCommitMessage] = useState('');
   const [expandedFiles, setExpandedFiles] = useState(new Set());
   const [selectedFiles, setSelectedFiles] = useState(new Set());
-  const [isCommitting, setIsCommitting] = useState(false);
   const [currentBranch, setCurrentBranch] = useState('');
   const [branches, setBranches] = useState([]);
   const [wrapText, setWrapText] = useState(true);
@@ -35,17 +64,11 @@ function GitPanel({ selectedProject, isMobile }) {
   const [showBranchDropdown, setShowBranchDropdown] = useState(false);
   const [showNewBranchModal, setShowNewBranchModal] = useState(false);
   const [newBranchName, setNewBranchName] = useState('');
-  const [isCreatingBranch, setIsCreatingBranch] = useState(false);
   const [activeView, setActiveView] = useState('changes'); // 'changes' or 'history'
   const [recentCommits, setRecentCommits] = useState([]);
   const [expandedCommits, setExpandedCommits] = useState(new Set());
   const [commitDiffs, setCommitDiffs] = useState({});
-  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
   const [remoteStatus, setRemoteStatus] = useState(null);
-  const [isFetching, setIsFetching] = useState(false);
-  const [isPulling, setIsPulling] = useState(false);
-  const [isPushing, setIsPushing] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
   const [isCommitAreaCollapsed, setIsCommitAreaCollapsed] = useState(isMobile); // Collapsed by default on mobile
   const [confirmAction, setConfirmAction] = useState(null); // { type: 'discard|commit|pull|push', file?: string, message?: string }
   const [errorMessage, setErrorMessage] = useState(null); // For displaying user-friendly error messages
@@ -131,45 +154,44 @@ function GitPanel({ selectedProject, isMobile }) {
   const fetchGitStatus = async () => {
     if (!selectedProject) return;
 
-    setIsLoading(true);
     try {
-      const response = await authenticatedFetch(
-        `/api/git/status?project=${encodeURIComponent(selectedProject.name)}`
-      );
-      const data = await response.json();
+      await executeNamedAsync(async () => {
+        const response = await authenticatedFetch(
+          `/api/git/status?project=${encodeURIComponent(selectedProject.name)}`
+        );
+        const data = await response.json();
 
-      if (data.error) {
-        console.error('Git status error:', data.error);
-        setGitStatus({ error: data.error, details: data.details });
-      } else {
-        setGitStatus(data);
-        setCurrentBranch(data.branch || 'main');
+        if (data.error) {
+          console.error('Git status error:', data.error);
+          setGitStatus({ error: data.error, details: data.details });
+        } else {
+          setGitStatus(data);
+          setCurrentBranch(data.branch || 'main');
 
-        // Auto-select all changed files
-        const allFiles = new Set([
-          ...(data.modified || []),
-          ...(data.added || []),
-          ...(data.deleted || []),
-          ...(data.untracked || [])
-        ]);
-        setSelectedFiles(allFiles);
+          // Auto-select all changed files
+          const allFiles = new Set([
+            ...(data.modified || []),
+            ...(data.added || []),
+            ...(data.deleted || []),
+            ...(data.untracked || [])
+          ]);
+          setSelectedFiles(allFiles);
 
-        // Fetch diffs for changed files
-        for (const file of data.modified || []) {
-          fetchFileDiff(file);
+          // Fetch diffs for changed files
+          for (const file of data.modified || []) {
+            fetchFileDiff(file);
+          }
+          for (const file of data.added || []) {
+            fetchFileDiff(file);
+          }
         }
-        for (const file of data.added || []) {
-          fetchFileDiff(file);
-        }
-      }
+      }, 'loading', 'git-status-fetch');
     } catch (error) {
       console.error('Error fetching git status:', error);
       showErrorMessage(
         'Unable to connect to Git. Please check your network connection.',
         'Git status'
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -245,156 +267,151 @@ function GitPanel({ selectedProject, isMobile }) {
   const createBranch = async () => {
     if (!newBranchName.trim()) return;
 
-    setIsCreatingBranch(true);
     try {
-      const response = await authenticatedFetch('/api/git/create-branch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: selectedProject.name,
-          branch: newBranchName.trim()
-        })
-      });
+      await executeNamedAsync(async () => {
+        const response = await authenticatedFetch('/api/git/create-branch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project: selectedProject.name,
+            branch: newBranchName.trim()
+          })
+        });
 
-      const data = await response.json();
-      if (data.success) {
-        setCurrentBranch(newBranchName.trim());
-        setShowNewBranchModal(false);
-        setShowBranchDropdown(false);
-        setNewBranchName('');
-        fetchBranches(); // Refresh branch list
-        fetchGitStatus(); // Refresh status
-      } else {
-        console.error('Failed to create branch:', data.error);
-        showErrorMessage(data.error, 'Branch creation');
-      }
+        const data = await response.json();
+        if (data.success) {
+          setCurrentBranch(newBranchName.trim());
+          setShowNewBranchModal(false);
+          setShowBranchDropdown(false);
+          setNewBranchName('');
+          fetchBranches(); // Refresh branch list
+          fetchGitStatus(); // Refresh status
+        } else {
+          console.error('Failed to create branch:', data.error);
+          showErrorMessage(data.error, 'Branch creation');
+        }
+      }, 'creatingBranch', 'create-branch');
     } catch (error) {
       console.error('Error creating branch:', error);
       showErrorMessage(
         'Network error during branch creation. Please try again.',
         'Branch creation'
       );
-    } finally {
-      setIsCreatingBranch(false);
     }
   };
 
   const handleFetch = async () => {
-    setIsFetching(true);
     try {
-      const response = await authenticatedFetch('/api/git/fetch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: selectedProject.name
-        })
-      });
+      await executeNamedAsync(async () => {
+        const response = await authenticatedFetch('/api/git/fetch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project: selectedProject.name
+          })
+        });
 
-      const data = await response.json();
-      if (data.success) {
-        // Refresh status after successful fetch
-        fetchGitStatus();
-        fetchRemoteStatus();
-      } else {
-        console.error('Fetch failed:', data.error);
-        showErrorMessage(data.error, 'Fetch operation');
-      }
+        const data = await response.json();
+        if (data.success) {
+          // Refresh status after successful fetch
+          fetchGitStatus();
+          fetchRemoteStatus();
+        } else {
+          console.error('Fetch failed:', data.error);
+          showErrorMessage(data.error, 'Fetch operation');
+        }
+      }, 'fetching', 'git-fetch');
     } catch (error) {
       console.error('Error fetching from remote:', error);
       showErrorMessage(
         'Network error during fetch operation. Please try again.',
         'Fetch operation'
       );
-    } finally {
-      setIsFetching(false);
     }
   };
 
   const handlePull = async () => {
-    setIsPulling(true);
     try {
-      const response = await authenticatedFetch('/api/git/pull', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: selectedProject.name
-        })
-      });
+      await executeNamedAsync(async () => {
+        const response = await authenticatedFetch('/api/git/pull', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project: selectedProject.name
+          })
+        });
 
-      const data = await response.json();
-      if (data.success) {
-        // Refresh status after successful pull
-        fetchGitStatus();
-        fetchRemoteStatus();
-      } else {
-        console.error('Pull failed:', data.error);
-        showErrorMessage(data.error, 'Pull operation');
-      }
+        const data = await response.json();
+        if (data.success) {
+          // Refresh status after successful pull
+          fetchGitStatus();
+          fetchRemoteStatus();
+        } else {
+          console.error('Pull failed:', data.error);
+          showErrorMessage(data.error, 'Pull operation');
+        }
+      }, 'pulling', 'git-pull');
     } catch (error) {
       console.error('Error pulling from remote:', error);
       showErrorMessage('Network error during pull operation. Please try again.', 'Pull operation');
-    } finally {
-      setIsPulling(false);
     }
   };
 
   const handlePush = async () => {
-    setIsPushing(true);
     try {
-      const response = await authenticatedFetch('/api/git/push', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: selectedProject.name
-        })
-      });
+      await executeNamedAsync(async () => {
+        const response = await authenticatedFetch('/api/git/push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project: selectedProject.name
+          })
+        });
 
-      const data = await response.json();
-      if (data.success) {
-        // Refresh status after successful push
-        fetchGitStatus();
-        fetchRemoteStatus();
-      } else {
-        console.error('Push failed:', data.error);
-        showErrorMessage(data.error, 'Push operation');
-      }
+        const data = await response.json();
+        if (data.success) {
+          // Refresh status after successful push
+          fetchGitStatus();
+          fetchRemoteStatus();
+        } else {
+          console.error('Push failed:', data.error);
+          showErrorMessage(data.error, 'Push operation');
+        }
+      }, 'pushing', 'git-push');
     } catch (error) {
       console.error('Error pushing to remote:', error);
       showErrorMessage('Network error during push operation. Please try again.', 'Push operation');
-    } finally {
-      setIsPushing(false);
     }
   };
 
   const handlePublish = async () => {
-    setIsPublishing(true);
     try {
-      const response = await authenticatedFetch('/api/git/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: selectedProject.name,
-          branch: currentBranch
-        })
-      });
+      await executeNamedAsync(async () => {
+        const response = await authenticatedFetch('/api/git/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project: selectedProject.name,
+            branch: currentBranch
+          })
+        });
 
-      const data = await response.json();
-      if (data.success) {
-        // Refresh status after successful publish
-        fetchGitStatus();
-        fetchRemoteStatus();
-      } else {
-        console.error('Publish failed:', data.error);
-        showErrorMessage(data.error, 'Publish operation');
-      }
+        const data = await response.json();
+        if (data.success) {
+          // Refresh status after successful publish
+          fetchGitStatus();
+          fetchRemoteStatus();
+        } else {
+          console.error('Publish failed:', data.error);
+          showErrorMessage(data.error, 'Publish operation');
+        }
+      }, 'publishing', 'git-publish');
     } catch (error) {
       console.error('Error publishing branch:', error);
       showErrorMessage(
         'Network error during publish operation. Please try again.',
         'Publish operation'
       );
-    } finally {
-      setIsPublishing(false);
     }
   };
 
@@ -558,32 +575,31 @@ function GitPanel({ selectedProject, isMobile }) {
   };
 
   const generateCommitMessage = async () => {
-    setIsGeneratingMessage(true);
     try {
-      const response = await authenticatedFetch('/api/git/generate-commit-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: selectedProject.name,
-          files: Array.from(selectedFiles)
-        })
-      });
+      await executeNamedAsync(async () => {
+        const response = await authenticatedFetch('/api/git/generate-commit-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project: selectedProject.name,
+            files: Array.from(selectedFiles)
+          })
+        });
 
-      const data = await response.json();
-      if (data.message) {
-        setCommitMessage(data.message);
-      } else {
-        console.error('Failed to generate commit message:', data.error);
-        showErrorMessage(data.error, 'Generate commit message');
-      }
+        const data = await response.json();
+        if (data.message) {
+          setCommitMessage(data.message);
+        } else {
+          console.error('Failed to generate commit message:', data.error);
+          showErrorMessage(data.error, 'Generate commit message');
+        }
+      }, 'generatingMessage', 'generate-commit-message');
     } catch (error) {
       console.error('Error generating commit message:', error);
       showErrorMessage(
         'Network error while generating commit message. Please try again.',
         'Generate commit message'
       );
-    } finally {
-      setIsGeneratingMessage(false);
     }
   };
 
@@ -630,34 +646,33 @@ function GitPanel({ selectedProject, isMobile }) {
   const handleCommit = async () => {
     if (!commitMessage.trim() || selectedFiles.size === 0) return;
 
-    setIsCommitting(true);
     try {
-      const response = await authenticatedFetch('/api/git/commit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: selectedProject.name,
-          message: commitMessage,
-          files: Array.from(selectedFiles)
-        })
-      });
+      await executeNamedAsync(async () => {
+        const response = await authenticatedFetch('/api/git/commit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            project: selectedProject.name,
+            message: commitMessage,
+            files: Array.from(selectedFiles)
+          })
+        });
 
-      const data = await response.json();
-      if (data.success) {
-        // Reset state after successful commit
-        setCommitMessage('');
-        setSelectedFiles(new Set());
-        fetchGitStatus();
-        fetchRemoteStatus();
-      } else {
-        console.error('Commit failed:', data.error);
-        showErrorMessage(data.error, 'Commit operation');
-      }
+        const data = await response.json();
+        if (data.success) {
+          // Reset state after successful commit
+          setCommitMessage('');
+          setSelectedFiles(new Set());
+          fetchGitStatus();
+          fetchRemoteStatus();
+        } else {
+          console.error('Commit failed:', data.error);
+          showErrorMessage(data.error, 'Commit operation');
+        }
+      }, 'committing', 'git-commit');
     } catch (error) {
       console.error('Error committing changes:', error);
       showErrorMessage('Network error during commit. Please try again.', 'Commit operation');
-    } finally {
-      setIsCommitting(false);
     }
   };
 
