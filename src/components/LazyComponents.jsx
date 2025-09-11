@@ -201,8 +201,8 @@ export const OptimizedToolsSettings = memo((props) => (
       <div className="p-6">
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded mb-4 w-1/3"></div>
         <div className="space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+          {[...Array(5)].map((_, idx) => (
+            <div key={idx} className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
           ))}
         </div>
       </div>
@@ -216,8 +216,8 @@ export const OptimizedSidebar = memo((props) => (
   <Suspense fallback={
     <div className="w-64 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 animate-pulse">
       <div className="p-4 space-y-4">
-        {[...Array(8)].map((_, i) => (
-          <div key={i} className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        {[...Array(8)].map((_, sidebarIdx) => (
+          <div key={sidebarIdx} className="h-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
         ))}
       </div>
     </div>
@@ -232,8 +232,8 @@ export const OptimizedGitPanel = memo((props) => (
       <div className="p-4">
         <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded mb-3 w-1/4"></div>
         <div className="space-y-2">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+          {[...Array(6)].map((_, gitIdx) => (
+            <div key={gitIdx} className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
           ))}
         </div>
       </div>
