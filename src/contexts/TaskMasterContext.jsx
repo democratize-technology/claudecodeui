@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { api } from '../utils/api';
 import { useAuth } from './AuthContext';
 import { useWebSocketContext } from './WebSocketContext';
+import { useMultipleLoadingStates } from '../utils/hooks/useLoadingState';
 
 const TaskMasterContext = createContext({
   // TaskMaster project state
@@ -54,10 +55,18 @@ export const TaskMasterProvider = ({ children }) => {
   const [mcpServerStatus, setMCPServerStatus] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [nextTask, setNextTask] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingTasks, setIsLoadingTasks] = useState(false);
-  const [isLoadingMCP, setIsLoadingMCP] = useState(false);
   const [error, setError] = useState(null);
+
+  // Use standardized loading state management with race condition protection
+  const {
+    projectsLoading: isLoading,
+    tasksLoading: isLoadingTasks,
+    mcpLoading: isLoadingMCP,
+    executeNamedAsync,
+    setProjectsLoading: setIsLoading,
+    setTasksLoading: setIsLoadingTasks,
+    setMcpLoading: setIsLoadingMCP
+  } = useMultipleLoadingStates(['projects', 'tasks', 'mcp']);
 
   // Helper to handle API errors
   const handleError = (error, context) => {
@@ -81,53 +90,52 @@ export const TaskMasterProvider = ({ children }) => {
     // Only make API calls if user is authenticated
     if (!user || !token) {
       setProjects([]);
-      setCurrentProjectState(null); // This might be the problem!
+      setCurrentProjectState(null);
       return;
     }
 
     try {
-      setIsLoading(true);
-      clearError();
-      const response = await api.get('/projects');
+      await executeNamedAsync(async () => {
+        clearError();
+        const response = await api.get('/projects');
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch projects: ${response.status}`);
-      }
-
-      const projectsData = await response.json();
-
-      // Check if projectsData is an array
-      if (!Array.isArray(projectsData)) {
-        console.error('Projects API returned non-array data:', projectsData);
-        setProjects([]);
-        return;
-      }
-
-      // Filter and enrich projects with TaskMaster data
-      const enrichedProjects = projectsData.map((project) => ({
-        ...project,
-        taskMasterConfigured: project.taskmaster?.hasTaskmaster || false,
-        taskMasterStatus: project.taskmaster?.status || 'not-configured',
-        taskCount: project.taskmaster?.metadata?.taskCount || 0,
-        completedCount: project.taskmaster?.metadata?.completed || 0
-      }));
-
-      setProjects(enrichedProjects);
-
-      // If current project is set, update its TaskMaster data
-      if (currentProject) {
-        const updatedCurrent = enrichedProjects.find((p) => p.name === currentProject.name);
-        if (updatedCurrent) {
-          setCurrentProjectState(updatedCurrent);
-          setProjectTaskMaster(updatedCurrent.taskmaster);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch projects: ${response.status}`);
         }
-      }
+
+        const projectsData = await response.json();
+
+        // Check if projectsData is an array
+        if (!Array.isArray(projectsData)) {
+          console.error('Projects API returned non-array data:', projectsData);
+          setProjects([]);
+          return;
+        }
+
+        // Filter and enrich projects with TaskMaster data
+        const enrichedProjects = projectsData.map((project) => ({
+          ...project,
+          taskMasterConfigured: project.taskmaster?.hasTaskmaster || false,
+          taskMasterStatus: project.taskmaster?.status || 'not-configured',
+          taskCount: project.taskmaster?.metadata?.taskCount || 0,
+          completedCount: project.taskmaster?.metadata?.completed || 0
+        }));
+
+        setProjects(enrichedProjects);
+
+        // If current project is set, update its TaskMaster data
+        if (currentProject) {
+          const updatedCurrent = enrichedProjects.find((p) => p.name === currentProject.name);
+          if (updatedCurrent) {
+            setCurrentProjectState(updatedCurrent);
+            setProjectTaskMaster(updatedCurrent.taskmaster);
+          }
+        }
+      }, 'projects', 'refresh-projects');
     } catch (err) {
       handleError(err, 'load projects');
-    } finally {
-      setIsLoading(false);
     }
-  }, [user, token]); // Remove currentProject dependency to avoid infinite loops
+  }, [user, token, executeNamedAsync, currentProject, clearError]); // Add executeNamedAsync dependency
 
   // Set current project and load its TaskMaster details
   const setCurrentProject = useCallback(async (project) => {
@@ -179,16 +187,15 @@ export const TaskMasterProvider = ({ children }) => {
     }
 
     try {
-      setIsLoadingMCP(true);
-      clearError();
-      const mcpStatus = await api.get('/mcp-utils/taskmaster-server');
-      setMCPServerStatus(mcpStatus);
+      await executeNamedAsync(async () => {
+        clearError();
+        const mcpStatus = await api.get('/mcp-utils/taskmaster-server');
+        setMCPServerStatus(mcpStatus);
+      }, 'mcp', 'refresh-mcp-status');
     } catch (err) {
       handleError(err, 'check MCP server status');
-    } finally {
-      setIsLoadingMCP(false);
     }
-  }, [user, token]);
+  }, [user, token, executeNamedAsync, clearError]);
 
   // Refresh tasks for current project - load real TaskMaster data
   const refreshTasks = useCallback(async () => {
@@ -206,38 +213,37 @@ export const TaskMasterProvider = ({ children }) => {
     }
 
     try {
-      setIsLoadingTasks(true);
-      clearError();
+      await executeNamedAsync(async () => {
+        clearError();
 
-      // Load tasks from the TaskMaster API endpoint
-      const response = await api.get(
-        `/taskmaster/tasks/${encodeURIComponent(currentProject.name)}`
-      );
+        // Load tasks from the TaskMaster API endpoint
+        const response = await api.get(
+          `/taskmaster/tasks/${encodeURIComponent(currentProject.name)}`
+        );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to load tasks');
-      }
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to load tasks');
+        }
 
-      const data = await response.json();
+        const data = await response.json();
 
-      setTasks(data.tasks || []);
+        setTasks(data.tasks || []);
 
-      // Find next task (pending or in-progress)
-      const nextTask =
-        data.tasks?.find((task) => task.status === 'pending' || task.status === 'in-progress') ||
-        null;
-      setNextTask(nextTask);
+        // Find next task (pending or in-progress)
+        const nextTask =
+          data.tasks?.find((task) => task.status === 'pending' || task.status === 'in-progress') ||
+          null;
+        setNextTask(nextTask);
+      }, 'tasks', 'refresh-tasks');
     } catch (err) {
       console.error('Error loading tasks:', err);
       handleError(err, 'load tasks');
       // Set empty state on error
       setTasks([]);
       setNextTask(null);
-    } finally {
-      setIsLoadingTasks(false);
     }
-  }, [currentProject, user, token]);
+  }, [currentProject, user, token, executeNamedAsync, clearError]);
 
   // Load initial data on mount or when auth changes
   useEffect(() => {
