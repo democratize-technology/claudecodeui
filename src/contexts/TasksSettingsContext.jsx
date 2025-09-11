@@ -115,9 +115,16 @@ export const TasksSettingsProvider = ({ children }) => {
   }, [errorHandler]);
 
   useEffect(() => {
-    // Run check asynchronously without blocking initial render
-    setTimeout(checkInstallation, 0);
-  }, [checkInstallation]);
+    // DISABLED: TaskMaster integration disabled to prevent 401 errors
+    // setTimeout(checkInstallation, 0);
+    
+    // Set safe defaults - TaskMaster disabled
+    setIsTaskMasterInstalled(false);
+    setIsTaskMasterReady(false);
+    setInstallationStatus({ installation: { isInstalled: false }, isReady: false, disabled: true });
+    setIsCheckingInstallation(false);
+    setTasksEnabled(false);
+  }, []);
 
   const toggleTasksEnabled = () => {
     setTasksEnabled((prev) => !prev);
