@@ -37,6 +37,8 @@ import { api, authenticatedFetch } from './utils/api';
 import { deepNotEqual } from './utils/comparison';
 import safeLocalStorage from './utils/safeLocalStorage';
 import { useSimpleLoading } from './utils/hooks/useLoadingState';
+import { useErrorHandler } from './utils/hooks/useErrorHandler';
+import { ERROR_CATEGORIES, ERROR_SEVERITY } from './utils/errorHandling';
 
 // Main App component with routing
 function AppContent() {
@@ -56,6 +58,16 @@ function AppContent() {
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoadingProjects, setIsLoadingProjects, executeProjectsAsync] = useSimpleLoading(true);
+  
+  // Initialize error handling for project operations
+  const projectErrorHandler = useErrorHandler({
+    defaultCategory: ERROR_CATEGORIES.NETWORK,
+    defaultSeverity: ERROR_SEVERITY.MEDIUM,
+    showToast: true,
+    autoReset: true,
+    resetDelay: 3000
+  });
+
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [showToolsSettings, setShowToolsSettings] = useState(false);
   const [showQuickSettings, setShowQuickSettings] = useState(false);
@@ -204,7 +216,7 @@ function AppContent() {
   }, [messages, selectedProject, selectedSession, activeSessions]);
 
   const fetchProjects = async () => {
-    try {
+    await projectErrorHandler.executeAsync(async () => {
       await executeProjectsAsync(async () => {
         const response = await api.projects();
         const data = await response.json();
@@ -225,7 +237,16 @@ function AppContent() {
             project.cursorSessions = [];
           }
         } catch (error) {
-          console.error(`Error fetching Cursor sessions for project ${project.name}:`, error);
+          projectErrorHandler.reportError(
+            error, 
+            ERROR_CATEGORIES.EXTERNAL_SERVICE, 
+            ERROR_SEVERITY.LOW,
+            {
+              operation: 'cursor_session_fetch',
+              projectName: project.name,
+              fallbackUsed: true
+            }
+          );
           project.cursorSessions = [];
         }
       }
@@ -260,9 +281,7 @@ function AppContent() {
 
       // Don't auto-select any project - user should choose manually
       });
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-    }
+    });
   };
 
   // Expose fetchProjects globally for component access
