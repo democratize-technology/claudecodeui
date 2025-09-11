@@ -15,14 +15,16 @@ import { cn } from '../lib/utils';
 import CodeEditor from './CodeEditor';
 import ImageViewer from './ImageViewer';
 import { api } from '../utils/api';
+import { useLoadingState } from '../utils/hooks/useLoadingState';
 
 function FileTree({ selectedProject }) {
   const [files, setFiles] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [expandedDirs, setExpandedDirs] = useState(new Set());
   const [selectedFile, setSelectedFile] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [viewMode, setViewMode] = useState('detailed'); // 'simple', 'detailed', 'compact'
+
+  const { isLoading: loading, executeAsync } = useLoadingState();
 
   useEffect(() => {
     if (selectedProject) {
@@ -39,24 +41,23 @@ function FileTree({ selectedProject }) {
   }, []);
 
   const fetchFiles = async () => {
-    setLoading(true);
     try {
-      const response = await api.getFiles(selectedProject.name);
+      await executeAsync(async () => {
+        const response = await api.getFiles(selectedProject.name);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ File fetch failed:', response.status, errorText);
-        setFiles([]);
-        return;
-      }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ File fetch failed:', response.status, errorText);
+          setFiles([]);
+          return;
+        }
 
-      const data = await response.json();
-      setFiles(data);
+        const data = await response.json();
+        setFiles(data);
+      }, 'fetch-files');
     } catch (error) {
       console.error('❌ Error fetching files:', error);
       setFiles([]);
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLoadingState } from '../utils/hooks/useLoadingState';
 import ClaudeLogo from './ClaudeLogo';
 
 const SetupForm = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const { register } = useAuth();
+  const { isLoading, executeAsync, withLoading, getLoadingText } = useLoadingState();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,15 +31,20 @@ const SetupForm = () => {
       return;
     }
 
-    setIsLoading(true);
+    try {
+      await executeAsync(async () => {
+        const result = await register(username, password);
 
-    const result = await register(username, password);
+        if (!result.success) {
+          setError(result.error);
+        }
 
-    if (!result.success) {
-      setError(result.error);
+        return result;
+      }, 'register-operation');
+    } catch (error) {
+      // Error is already set in the try block, no need to handle here
+      console.error('Registration error:', error);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -61,14 +67,15 @@ const SetupForm = () => {
                 Username
               </label>
               <input
-                type='text'
-                id='username'
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className='w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                placeholder='Enter your username'
-                required
-                disabled={isLoading}
+                {...withLoading({
+                  type: 'text',
+                  id: 'username',
+                  value: username,
+                  onChange: (e) => setUsername(e.target.value),
+                  className: 'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                  placeholder: 'Enter your username',
+                  required: true
+                })}
               />
             </div>
 
@@ -77,14 +84,15 @@ const SetupForm = () => {
                 Password
               </label>
               <input
-                type='password'
-                id='password'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className='w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                placeholder='Enter your password'
-                required
-                disabled={isLoading}
+                {...withLoading({
+                  type: 'password',
+                  id: 'password',
+                  value: password,
+                  onChange: (e) => setPassword(e.target.value),
+                  className: 'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                  placeholder: 'Enter your password',
+                  required: true
+                })}
               />
             </div>
 
@@ -96,14 +104,15 @@ const SetupForm = () => {
                 Confirm Password
               </label>
               <input
-                type='password'
-                id='confirmPassword'
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className='w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                placeholder='Confirm your password'
-                required
-                disabled={isLoading}
+                {...withLoading({
+                  type: 'password',
+                  id: 'confirmPassword',
+                  value: confirmPassword,
+                  onChange: (e) => setConfirmPassword(e.target.value),
+                  className: 'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                  placeholder: 'Confirm your password',
+                  required: true
+                })}
               />
             </div>
 
@@ -114,11 +123,12 @@ const SetupForm = () => {
             )}
 
             <button
-              type='submit'
-              disabled={isLoading}
-              className='w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200'
+              {...withLoading({
+                type: 'submit',
+                className: 'w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200'
+              })}
             >
-              {isLoading ? 'Setting up...' : 'Create Account'}
+              {getLoadingText('Create Account', 'Setting up...')}
             </button>
           </form>
 

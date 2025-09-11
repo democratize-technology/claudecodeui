@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLoadingState } from '../utils/hooks/useLoadingState';
 import { MessageSquare } from 'lucide-react';
 
 const LoginForm = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const { login } = useAuth();
+  const { isLoading, executeAsync, withLoading, getLoadingText } = useLoadingState();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,15 +20,20 @@ const LoginForm = () => {
       return;
     }
 
-    setIsLoading(true);
+    try {
+      await executeAsync(async () => {
+        const result = await login(username, password);
 
-    const result = await login(username, password);
+        if (!result.success) {
+          setError(result.error);
+        }
 
-    if (!result.success) {
-      setError(result.error);
+        return result;
+      }, 'login-operation');
+    } catch (error) {
+      // Error is already set in the try block, no need to handle here
+      console.error('Login error:', error);
     }
-
-    setIsLoading(false);
   };
 
   return (
@@ -52,14 +58,15 @@ const LoginForm = () => {
                 Username
               </label>
               <input
-                type='text'
-                id='username'
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className='w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                placeholder='Enter your username'
-                required
-                disabled={isLoading}
+                {...withLoading({
+                  type: 'text',
+                  id: 'username',
+                  value: username,
+                  onChange: (e) => setUsername(e.target.value),
+                  className: 'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                  placeholder: 'Enter your username',
+                  required: true
+                })}
               />
             </div>
 
@@ -68,14 +75,15 @@ const LoginForm = () => {
                 Password
               </label>
               <input
-                type='password'
-                id='password'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className='w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent'
-                placeholder='Enter your password'
-                required
-                disabled={isLoading}
+                {...withLoading({
+                  type: 'password',
+                  id: 'password',
+                  value: password,
+                  onChange: (e) => setPassword(e.target.value),
+                  className: 'w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+                  placeholder: 'Enter your password',
+                  required: true
+                })}
               />
             </div>
 
@@ -86,11 +94,12 @@ const LoginForm = () => {
             )}
 
             <button
-              type='submit'
-              disabled={isLoading}
-              className='w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200'
+              {...withLoading({
+                type: 'submit',
+                className: 'w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200'
+              })}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {getLoadingText('Sign In', 'Signing in...')}
             </button>
           </form>
 
