@@ -25,7 +25,6 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(safeLocalStorage.getItem('auth-token'));
-  const [isLoading, setIsLoading] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [error, setError] = useState(null);
 
@@ -42,62 +41,61 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = useCallback(async () => {
     try {
-      setIsLoading(true);
-      setError(null);
-      errorHandler.resetError();
+      await errorHandler.executeAsync(async () => {
+        setError(null);
+        errorHandler.resetError();
 
-      // Check if system needs setup with retry logic for network issues
-      const statusOperation = async () => {
-        const statusResponse = await errorHandler.fetchWithErrorHandling('/api/auth/status', {
-          method: 'GET'
-        });
-        return statusResponse.json();
-      };
-
-      const statusData = await withRetry(statusOperation, 3, 1000, ERROR_CATEGORIES.NETWORK);
-
-      if (statusData.needsSetup) {
-        setNeedsSetup(true);
-        setIsLoading(false);
-        return;
-      }
-
-      // If we have a token, verify it
-      if (token) {
-        try {
-          const userOperation = async () => {
-            const userResponse = await errorHandler.fetchWithErrorHandling('/api/auth/user', {
-              method: 'GET',
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            });
-            return userResponse.json();
-          };
-
-          const userData = await userOperation();
-          setUser(userData.user);
-          setNeedsSetup(false);
-        } catch (error) {
-          // Token is invalid - handle gracefully
-          errorHandler.reportError(error, ERROR_CATEGORIES.AUTHENTICATION, ERROR_SEVERITY.LOW, {
-            operation: 'token verification',
-            action: 'clearing_token'
+        // Check if system needs setup with retry logic for network issues
+        const statusOperation = async () => {
+          const statusResponse = await errorHandler.fetchWithErrorHandling('/api/auth/status', {
+            method: 'GET'
           });
-          safeLocalStorage.removeItem('auth-token');
-          setToken(null);
-          setUser(null);
+          return statusResponse.json();
+        };
+
+        const statusData = await withRetry(statusOperation, 3, 1000, ERROR_CATEGORIES.NETWORK);
+
+        if (statusData.needsSetup) {
+          setNeedsSetup(true);
+          return;
         }
-      }
-    } catch (error) {
-      errorHandler.reportError(error, ERROR_CATEGORIES.NETWORK, ERROR_SEVERITY.HIGH, {
+
+        // If we have a token, verify it
+        if (token) {
+          try {
+            const userOperation = async () => {
+              const userResponse = await errorHandler.fetchWithErrorHandling('/api/auth/user', {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${token}`
+                }
+              });
+              return userResponse.json();
+            };
+
+            const userData = await userOperation();
+            setUser(userData.user);
+            setNeedsSetup(false);
+          } catch (error) {
+            // Token is invalid - handle gracefully
+            errorHandler.reportError(error, ERROR_CATEGORIES.AUTHENTICATION, ERROR_SEVERITY.LOW, {
+              operation: 'token verification',
+              action: 'clearing_token'
+            });
+            safeLocalStorage.removeItem('auth-token');
+            setToken(null);
+            setUser(null);
+          }
+        }
+      }, ERROR_CATEGORIES.AUTHENTICATION, ERROR_SEVERITY.HIGH, {
         operation: 'auth status check',
         critical: true
       });
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      // executeAsync already handles error reporting
+      console.error('Auth status check failed:', error);
     }
-  }, [token]);
+  }, [token, errorHandler]);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -269,7 +267,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    isLoading,
+    isLoading: errorHandler.isLoading, // Use error handler's built-in loading state
     needsSetup,
     error
   };
