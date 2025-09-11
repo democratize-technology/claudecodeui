@@ -1,10 +1,10 @@
 /**
  * FOUC (Flash of Unstyled Content) Prevention Regression Tests
- * 
+ *
  * These tests prevent the FOUC bug from recurring during initial page load.
  * The bug was caused by ThemeContext accessing localStorage during React initialization
  * before the DOM was ready.
- * 
+ *
  * Fix: Added inline script in index.html + server-safe defaults in ThemeContext
  */
 
@@ -12,10 +12,10 @@ import React from 'react';
 import { render, waitFor, act } from '@testing-library/react';
 import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
 import { ThemeProvider } from '../../contexts/ThemeContext';
-import { 
-  createFOUCDetector, 
+import {
+  createFOUCDetector,
   createThemeTestUtils,
-  createPerformanceBenchmark 
+  createPerformanceBenchmark
 } from '../utils/test-utils';
 
 // Mock DOM structure that simulates the actual HTML setup
@@ -29,7 +29,7 @@ const mockHTMLStructure = () => {
       removeItem: vi.fn(),
       clear: vi.fn()
     };
-    
+
     Object.defineProperty(window, 'localStorage', {
       value: mockStorage,
       writable: true
@@ -47,7 +47,7 @@ const mockHTMLStructure = () => {
 
     // Simulate the inline script logic
     document.documentElement.classList.add('no-transition');
-    
+
     const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
     if (isDark) {
       document.documentElement.classList.add('dark');
@@ -69,31 +69,28 @@ const mockHTMLStructure = () => {
 // Test component that renders with theme-dependent styles
 const ThemeAwareComponent = () => {
   return (
-    <div 
-      data-testid="theme-aware-content"
-      className="min-h-screen transition-colors duration-200 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+    <div
+      data-testid='theme-aware-content'
+      className='min-h-screen transition-colors duration-200 bg-white dark:bg-gray-900 text-gray-900 dark:text-white'
     >
-      <header 
-        data-testid="header"
-        className="bg-gray-100 dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700"
+      <header
+        data-testid='header'
+        className='bg-gray-100 dark:bg-gray-800 p-4 border-b border-gray-200 dark:border-gray-700'
       >
-        <h1 className="text-2xl font-bold">App Header</h1>
+        <h1 className='text-2xl font-bold'>App Header</h1>
       </header>
-      
-      <main 
-        data-testid="main-content"
-        className="p-4"
-      >
-        <div className="bg-blue-50 dark:bg-blue-900 p-6 rounded-lg">
+
+      <main data-testid='main-content' className='p-4'>
+        <div className='bg-blue-50 dark:bg-blue-900 p-6 rounded-lg'>
           <p>This content should not flash during initial load</p>
         </div>
       </main>
-      
-      <footer 
-        data-testid="footer"
-        className="bg-gray-50 dark:bg-gray-900 p-4 border-t border-gray-200 dark:border-gray-700"
+
+      <footer
+        data-testid='footer'
+        className='bg-gray-50 dark:bg-gray-900 p-4 border-t border-gray-200 dark:border-gray-700'
       >
-        <p className="text-sm text-gray-600 dark:text-gray-400">Footer content</p>
+        <p className='text-sm text-gray-600 dark:text-gray-400'>Footer content</p>
       </footer>
     </div>
   );
@@ -120,10 +117,10 @@ describe('FOUC Prevention Regression Tests', () => {
     foucDetector.clearSnapshots();
     themeUtils.clearEvents();
     performanceBenchmark.clearMeasurements();
-    
+
     // Clean up document state
     document.documentElement.classList.remove('dark', 'no-transition', 'theme-transition');
-    
+
     vi.clearAllMocks();
   });
 
@@ -147,11 +144,13 @@ describe('FOUC Prevention Regression Tests', () => {
           // Capture styles during hydration
           for (let i = 0; i < 5; i++) {
             foucDetector.captureInitialStyles();
-            await new Promise(resolve => setTimeout(resolve, 20));
+            await new Promise((resolve) => setTimeout(resolve, 20));
           }
 
           await waitFor(() => {
-            expect(container.querySelector('[data-testid="theme-aware-content"]')).toBeInTheDocument();
+            expect(
+              container.querySelector('[data-testid="theme-aware-content"]')
+            ).toBeInTheDocument();
           });
         }
       );
@@ -185,11 +184,13 @@ describe('FOUC Prevention Regression Tests', () => {
           // Capture styles during hydration
           for (let i = 0; i < 5; i++) {
             foucDetector.captureInitialStyles();
-            await new Promise(resolve => setTimeout(resolve, 20));
+            await new Promise((resolve) => setTimeout(resolve, 20));
           }
 
           await waitFor(() => {
-            expect(container.querySelector('[data-testid="theme-aware-content"]')).toBeInTheDocument();
+            expect(
+              container.querySelector('[data-testid="theme-aware-content"]')
+            ).toBeInTheDocument();
           });
         }
       );
@@ -220,7 +221,7 @@ describe('FOUC Prevention Regression Tests', () => {
       const snapshots = [];
       for (let i = 0; i < 10; i++) {
         snapshots.push(foucDetector.captureInitialStyles());
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
 
       await waitFor(() => {
@@ -246,9 +247,12 @@ describe('FOUC Prevention Regression Tests', () => {
       expect(document.documentElement.classList.contains('no-transition')).toBe(true);
 
       // Wait for the class to be removed (100ms timeout in inline script)
-      await waitFor(() => {
-        expect(document.documentElement.classList.contains('no-transition')).toBe(false);
-      }, { timeout: 200 });
+      await waitFor(
+        () => {
+          expect(document.documentElement.classList.contains('no-transition')).toBe(false);
+        },
+        { timeout: 200 }
+      );
 
       // After removal, transitions should be enabled
       const element = document.querySelector('[data-testid="theme-aware-content"]');
@@ -265,7 +269,9 @@ describe('FOUC Prevention Regression Tests', () => {
       // Simulate server-side render scenario (no localStorage access)
       Object.defineProperty(window, 'localStorage', {
         value: {
-          getItem: vi.fn(() => { throw new Error('localStorage not available'); }),
+          getItem: vi.fn(() => {
+            throw new Error('localStorage not available');
+          }),
           setItem: vi.fn(),
           removeItem: vi.fn(),
           clear: vi.fn()
@@ -286,10 +292,7 @@ describe('FOUC Prevention Regression Tests', () => {
       });
 
       // Should handle localStorage errors gracefully
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Theme initialization error:',
-        expect.any(Error)
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Theme initialization error:', expect.any(Error));
 
       // Should still initialize without throwing
       expect(document.querySelector('[data-testid="theme-aware-content"]')).toBeInTheDocument();
@@ -309,10 +312,10 @@ describe('FOUC Prevention Regression Tests', () => {
 
       // Component should render with light theme initially (server-safe default)
       const themeAwareElement = container.querySelector('[data-testid="theme-aware-content"]');
-      
+
       // Should not have dark classes initially
       expect(document.documentElement.classList.contains('dark')).toBe(false);
-      
+
       // Wait for theme initialization
       await waitFor(() => {
         // After initialization, should still be light theme
@@ -325,24 +328,21 @@ describe('FOUC Prevention Regression Tests', () => {
     it('should complete initial theme setup within performance threshold', async () => {
       htmlUtils.simulateInlineScript('dark', false);
 
-      const measurement = await performanceBenchmark.benchmark(
-        'initial-theme-setup',
-        async () => {
-          render(
-            <ThemeProvider>
-              <ThemeAwareComponent />
-            </ThemeProvider>
-          );
+      const measurement = await performanceBenchmark.benchmark('initial-theme-setup', async () => {
+        render(
+          <ThemeProvider>
+            <ThemeAwareComponent />
+          </ThemeProvider>
+        );
 
-          // Wait for full initialization
-          await waitFor(() => {
-            const element = document.querySelector('[data-testid="main-content"]');
-            const computedStyle = window.getComputedStyle(element);
-            // Should have proper dark mode styles applied
-            return computedStyle.color !== ''; // Some style should be computed
-          });
-        }
-      );
+        // Wait for full initialization
+        await waitFor(() => {
+          const element = document.querySelector('[data-testid="main-content"]');
+          const computedStyle = window.getComputedStyle(element);
+          // Should have proper dark mode styles applied
+          return computedStyle.color !== ''; // Some style should be computed
+        });
+      });
 
       // Initial theme setup should be very fast
       expect(measurement.average).toBeLessThan(100);
@@ -352,7 +352,7 @@ describe('FOUC Prevention Regression Tests', () => {
       htmlUtils.simulateInlineScript('light', false);
 
       const renderStartTime = performance.now();
-      
+
       const { container } = render(
         <ThemeProvider>
           <ThemeAwareComponent />
@@ -412,7 +412,7 @@ describe('FOUC Prevention Regression Tests', () => {
 
       // Capture multiple style snapshots during initialization
       const styleSnapshots = [];
-      
+
       render(
         <ThemeProvider>
           <ThemeAwareComponent />
@@ -427,13 +427,13 @@ describe('FOUC Prevention Regression Tests', () => {
           documentHasNoTransition: document.documentElement.classList.contains('no-transition')
         };
         styleSnapshots.push(snapshot);
-        await new Promise(resolve => setTimeout(resolve, 12));
+        await new Promise((resolve) => setTimeout(resolve, 12));
       }
 
       // All snapshots should be consistent
-      const darkStates = styleSnapshots.map(s => s.documentHasDark);
+      const darkStates = styleSnapshots.map((s) => s.documentHasDark);
       const firstDarkState = darkStates[0];
-      
+
       // Should maintain consistent dark state throughout initialization
       darkStates.forEach((isDark, index) => {
         expect(isDark).toBe(firstDarkState);
@@ -446,8 +446,12 @@ describe('FOUC Prevention Regression Tests', () => {
       // Mock localStorage to throw during inline script simulation
       Object.defineProperty(window, 'localStorage', {
         value: {
-          getItem: vi.fn(() => { throw new Error('Storage quota exceeded'); }),
-          setItem: vi.fn(() => { throw new Error('Storage quota exceeded'); }),
+          getItem: vi.fn(() => {
+            throw new Error('Storage quota exceeded');
+          }),
+          setItem: vi.fn(() => {
+            throw new Error('Storage quota exceeded');
+          }),
           removeItem: vi.fn(),
           clear: vi.fn()
         },
@@ -476,7 +480,7 @@ describe('FOUC Prevention Regression Tests', () => {
 
       // Should still render successfully despite localStorage errors
       expect(document.querySelector('[data-testid="header"]')).toBeInTheDocument();
-      
+
       consoleSpy.mockRestore();
     });
 
@@ -484,7 +488,9 @@ describe('FOUC Prevention Regression Tests', () => {
       // Mock localStorage failure but working matchMedia
       Object.defineProperty(window, 'localStorage', {
         value: {
-          getItem: vi.fn(() => { throw new Error('localStorage error'); }),
+          getItem: vi.fn(() => {
+            throw new Error('localStorage error');
+          }),
           setItem: vi.fn(),
           removeItem: vi.fn(),
           clear: vi.fn()

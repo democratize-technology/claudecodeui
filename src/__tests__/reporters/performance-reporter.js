@@ -1,6 +1,6 @@
 /**
  * Performance Reporter for Jest
- * 
+ *
  * Custom Jest reporter that tracks performance metrics during regression tests
  * and generates performance reports for CI/CD integration.
  */
@@ -21,11 +21,11 @@ class PerformanceReporter {
   onTestResult(test, testResult, aggregatedResults) {
     // Extract performance data from test results
     const performanceMetrics = this.extractPerformanceMetrics(testResult);
-    
+
     if (performanceMetrics.length > 0) {
       this.performanceData.push({
         testFile: test.path,
-        testName: testResult.testResults.map(t => t.title).join(' > '),
+        testName: testResult.testResults.map((t) => t.title).join(' > '),
         metrics: performanceMetrics,
         duration: testResult.perfStats.end - testResult.perfStats.start
       });
@@ -42,8 +42,8 @@ class PerformanceReporter {
       success: testResult.numFailingTests === 0,
       duration: testResult.perfStats.end - testResult.perfStats.start,
       failureMessages: testResult.testResults
-        .filter(t => t.status === 'failed')
-        .map(t => t.failureMessages)
+        .filter((t) => t.status === 'failed')
+        .map((t) => t.failureMessages)
         .flat()
     });
   }
@@ -54,7 +54,7 @@ class PerformanceReporter {
 
     console.log('\n📊 Performance Test Summary');
     console.log('================================');
-    
+
     this.generatePerformanceSummary();
     this.generatePerformanceReport();
     this.checkOverallBudgetCompliance();
@@ -62,7 +62,7 @@ class PerformanceReporter {
     console.log(`\n⏱️  Total test duration: ${totalDuration}ms`);
     console.log(`✅ Tests passed: ${results.numPassedTests}`);
     console.log(`❌ Tests failed: ${results.numFailedTests}`);
-    
+
     if (results.numFailedTests > 0) {
       console.log('\n🚨 REGRESSION TEST FAILURES DETECTED!');
       console.log('Review the failures above - these may indicate UI regressions.');
@@ -75,7 +75,7 @@ class PerformanceReporter {
     const metrics = [];
 
     // Look for performance data in console messages or test names
-    testResult.testResults.forEach(test => {
+    testResult.testResults.forEach((test) => {
       // Extract timing data from test names or descriptions
       const titleMatch = test.title.match(/(\d+\.?\d*)ms/);
       if (titleMatch) {
@@ -89,7 +89,7 @@ class PerformanceReporter {
 
       // Extract performance data from console output
       if (test.console) {
-        test.console.forEach(msg => {
+        test.console.forEach((msg) => {
           const perfMatch = msg.message.match(/(.+): (\d+\.?\d*)ms \(budget: (\d+)ms\)/);
           if (perfMatch) {
             metrics.push({
@@ -130,7 +130,7 @@ class PerformanceReporter {
   checkPerformanceBudgets(metrics) {
     const violations = [];
 
-    metrics.forEach(metric => {
+    metrics.forEach((metric) => {
       if (metric.budget && metric.duration > metric.budget) {
         violations.push({
           operation: metric.operation,
@@ -146,10 +146,10 @@ class PerformanceReporter {
 
   logBudgetViolations(testFile, violations) {
     console.log(`\n⚠️  Performance Budget Violations in ${testFile}:`);
-    violations.forEach(violation => {
+    violations.forEach((violation) => {
       console.log(
         `   ${violation.operation}: ${violation.actual.toFixed(2)}ms ` +
-        `(budget: ${violation.budget}ms, exceeded by: ${violation.exceeded.toFixed(2)}ms)`
+          `(budget: ${violation.budget}ms, exceeded by: ${violation.exceeded.toFixed(2)}ms)`
       );
     });
   }
@@ -161,9 +161,9 @@ class PerformanceReporter {
     }
 
     const allMetrics = this.performanceData
-      .map(d => d.metrics)
+      .map((d) => d.metrics)
       .flat()
-      .filter(m => m.budget);
+      .filter((m) => m.budget);
 
     if (allMetrics.length === 0) {
       console.log('No performance metrics with budgets found');
@@ -182,20 +182,20 @@ class PerformanceReporter {
 
     // Calculate statistics for each operation
     Object.entries(groupedMetrics).forEach(([operation, metrics]) => {
-      const durations = metrics.map(m => m.duration);
+      const durations = metrics.map((m) => m.duration);
       const budget = metrics[0].budget;
-      
+
       const avg = durations.reduce((sum, d) => sum + d, 0) / durations.length;
       const min = Math.min(...durations);
       const max = Math.max(...durations);
-      const violations = metrics.filter(m => m.duration > m.budget).length;
+      const violations = metrics.filter((m) => m.duration > m.budget).length;
 
       const status = avg <= budget ? '✅' : '❌';
-      
+
       console.log(
         `${status} ${operation}: avg ${avg.toFixed(1)}ms, ` +
-        `min ${min.toFixed(1)}ms, max ${max.toFixed(1)}ms ` +
-        `(budget: ${budget}ms, violations: ${violations}/${metrics.length})`
+          `min ${min.toFixed(1)}ms, max ${max.toFixed(1)}ms ` +
+          `(budget: ${budget}ms, violations: ${violations}/${metrics.length})`
       );
     });
   }
@@ -204,8 +204,8 @@ class PerformanceReporter {
     const reportData = {
       timestamp: new Date().toISOString(),
       totalTests: this.testResults.length,
-      passedTests: this.testResults.filter(t => t.success).length,
-      failedTests: this.testResults.filter(t => !t.success).length,
+      passedTests: this.testResults.filter((t) => t.success).length,
+      failedTests: this.testResults.filter((t) => !t.success).length,
       performanceMetrics: this.performanceData,
       budgetViolations: this.getAllBudgetViolations(),
       summary: this.generateSummaryStats()
@@ -214,7 +214,7 @@ class PerformanceReporter {
     // Write JSON report for programmatic access
     const fs = require('fs');
     const path = require('path');
-    
+
     const reportDir = path.join(process.cwd(), 'test-results', 'regression');
     if (!fs.existsSync(reportDir)) {
       fs.mkdirSync(reportDir, { recursive: true });
@@ -267,7 +267,7 @@ Generated: ${data.timestamp}
 
     if (data.budgetViolations.length > 0) {
       markdown += `⚠️ **${data.budgetViolations.length} budget violations detected:**\n\n`;
-      data.budgetViolations.forEach(violation => {
+      data.budgetViolations.forEach((violation) => {
         markdown += `- **${violation.operation}:** ${violation.actual.toFixed(2)}ms (budget: ${violation.budget}ms)\n`;
       });
     } else {
@@ -298,8 +298,8 @@ Generated: ${data.timestamp}
 
   getAllBudgetViolations() {
     const violations = [];
-    
-    this.performanceData.forEach(data => {
+
+    this.performanceData.forEach((data) => {
       const budgetViolations = this.checkPerformanceBudgets(data.metrics);
       violations.push(...budgetViolations);
     });
@@ -309,9 +309,9 @@ Generated: ${data.timestamp}
 
   generateSummaryStats() {
     const allMetrics = this.performanceData
-      .map(d => d.metrics)
+      .map((d) => d.metrics)
       .flat()
-      .filter(m => m.budget);
+      .filter((m) => m.budget);
 
     const groupedMetrics = allMetrics.reduce((groups, metric) => {
       const key = metric.operation;
@@ -324,13 +324,13 @@ Generated: ${data.timestamp}
 
     const operationStats = {};
     Object.entries(groupedMetrics).forEach(([operation, metrics]) => {
-      const durations = metrics.map(m => m.duration);
+      const durations = metrics.map((m) => m.duration);
       operationStats[operation] = {
         average: durations.reduce((sum, d) => sum + d, 0) / durations.length,
         min: Math.min(...durations),
         max: Math.max(...durations),
         budget: metrics[0].budget,
-        violations: metrics.filter(m => m.duration > m.budget).length,
+        violations: metrics.filter((m) => m.duration > m.budget).length,
         total: metrics.length
       };
     });
@@ -344,12 +344,12 @@ Generated: ${data.timestamp}
 
   checkOverallBudgetCompliance() {
     const violations = this.getAllBudgetViolations();
-    
+
     if (violations.length > 0) {
       console.log(`\n🚨 PERFORMANCE REGRESSION DETECTED!`);
       console.log(`${violations.length} operations exceeded their performance budgets.`);
       console.log('This may indicate a performance regression that needs investigation.');
-      
+
       // Exit with error code for CI/CD integration
       if (process.env.CI) {
         process.exitCode = 1;

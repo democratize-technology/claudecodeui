@@ -26,9 +26,9 @@ describe('API utilities', () => {
   describe('authenticatedFetch', () => {
     it('should make a fetch request without token when no token in localStorage', async () => {
       localStorageMock.getItem.mockReturnValue(null);
-      fetch.mockResolvedValue({ 
+      fetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({}) 
+        json: () => Promise.resolve({})
       });
 
       await authenticatedFetch('/test-endpoint');

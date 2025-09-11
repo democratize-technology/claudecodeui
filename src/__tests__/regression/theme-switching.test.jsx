@@ -1,10 +1,10 @@
 /**
  * Theme Switching Regression Tests
- * 
+ *
  * These tests prevent the dark mode flashing bug from recurring.
  * The bug was caused by CSS transitions being applied to ALL elements
  * during theme switches, causing visible color flashes.
- * 
+ *
  * Fix: Selective `.theme-transition` class with optimized timing
  */
 
@@ -13,35 +13,35 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
 import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
-import { 
-  createThemeTestUtils, 
-  createFlashDetector, 
-  createPerformanceBenchmark 
+import {
+  createThemeTestUtils,
+  createFlashDetector,
+  createPerformanceBenchmark
 } from '../utils/test-utils';
 
 // Test component that uses theme
 const TestThemeComponent = ({ onThemeChange }) => {
   const { isDarkMode, toggleDarkMode, isInitialized } = useTheme();
-  
+
   React.useEffect(() => {
     if (onThemeChange) onThemeChange({ isDarkMode, isInitialized });
   }, [isDarkMode, isInitialized, onThemeChange]);
 
   return (
-    <div 
-      data-testid="theme-component" 
+    <div
+      data-testid='theme-component'
       className={`p-4 transition-colors duration-200 ${
         isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
       }`}
     >
-      <button 
-        data-testid="theme-toggle" 
+      <button
+        data-testid='theme-toggle'
         onClick={toggleDarkMode}
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        className='px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
       >
         Switch to {isDarkMode ? 'Light' : 'Dark'} Mode
       </button>
-      <div data-testid="theme-status">
+      <div data-testid='theme-status'>
         Mode: {isDarkMode ? 'Dark' : 'Light'} | Initialized: {isInitialized.toString()}
       </div>
     </div>
@@ -59,7 +59,7 @@ describe('Theme Switching Regression Tests', () => {
     themeUtils = createThemeTestUtils();
     flashDetector = createFlashDetector();
     performanceBenchmark = createPerformanceBenchmark();
-    
+
     mockLocalStorage = themeUtils.mockLocalStorage;
     mockMatchMedia = themeUtils.mockMatchMedia;
 
@@ -121,7 +121,7 @@ describe('Theme Switching Regression Tests', () => {
       });
 
       const styles = await flashPromise;
-      
+
       // Verify no flash occurred
       expect(flashDetector.hasFlash(styles)).toBe(false);
 
@@ -151,12 +151,14 @@ describe('Theme Switching Regression Tests', () => {
 
       await waitFor(() => {
         const events = themeUtils.getTransitionEvents();
-        
+
         // Should have transition-related class changes
-        expect(events.some(event => 
-          event.added.includes('theme-transition') || 
-          event.removed.includes('theme-transition')
-        )).toBe(true);
+        expect(
+          events.some(
+            (event) =>
+              event.added.includes('theme-transition') || event.removed.includes('theme-transition')
+          )
+        ).toBe(true);
       });
 
       transitionObserver.disconnect();
@@ -173,18 +175,15 @@ describe('Theme Switching Regression Tests', () => {
         expect(screen.getByText(/Initialized: true/)).toBeInTheDocument();
       });
 
-      const measurement = await performanceBenchmark.benchmark(
-        'theme-switch',
-        async () => {
-          await act(async () => {
-            await userEvent.click(screen.getByTestId('theme-toggle'));
-          });
-          
-          await waitFor(() => {
-            expect(document.documentElement.classList.contains('dark')).toBe(true);
-          });
-        }
-      );
+      const measurement = await performanceBenchmark.benchmark('theme-switch', async () => {
+        await act(async () => {
+          await userEvent.click(screen.getByTestId('theme-toggle'));
+        });
+
+        await waitFor(() => {
+          expect(document.documentElement.classList.contains('dark')).toBe(true);
+        });
+      });
 
       // Theme switch should complete within 300ms (well under the visual threshold)
       expect(measurement.average).toBeLessThan(300);
@@ -218,7 +217,7 @@ describe('Theme Switching Regression Tests', () => {
 
       // Simulate app restart with saved theme
       mockLocalStorage.getItem.mockReturnValue('light');
-      
+
       rerender(
         <ThemeProvider>
           <TestThemeComponent />
@@ -252,10 +251,7 @@ describe('Theme Switching Regression Tests', () => {
       });
 
       // Should log warning
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Theme initialization error:',
-        expect.any(Error)
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Theme initialization error:', expect.any(Error));
 
       consoleSpy.mockRestore();
     });
@@ -316,7 +312,7 @@ describe('Theme Switching Regression Tests', () => {
       });
 
       // Should remain light theme
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       expect(screen.getByText(/Mode: Light/)).toBeInTheDocument();
     });
   });
@@ -401,7 +397,7 @@ describe('Theme Switching Regression Tests', () => {
             await act(async () => {
               await userEvent.click(screen.getByTestId('theme-toggle'));
             });
-            await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+            await new Promise((resolve) => setTimeout(resolve, 50)); // Small delay
           }
         }
       );

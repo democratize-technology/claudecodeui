@@ -1,6 +1,6 @@
 /**
  * Integration Stability Regression Tests
- * 
+ *
  * These tests verify that all the bug fixes work together correctly
  * and don't introduce new issues when components interact with each other.
  * This prevents regression scenarios where individual fixes work but
@@ -29,7 +29,7 @@ import {
 // Mock WebSocketContext for integration testing
 const MockWebSocketProvider = ({ children, connectionState = 'connected' }) => {
   const [state, setState] = React.useState(connectionState);
-  
+
   const contextValue = {
     connectionState: state,
     sendMessage: vi.fn(),
@@ -60,45 +60,40 @@ const FullAppSimulation = ({
   React.useEffect(() => {
     if (simulateWebSocketIssues) {
       const interval = setInterval(() => {
-        setWebsocketState(prev => 
-          prev === 'connected' ? 'disconnected' : 'connected'
-        );
+        setWebsocketState((prev) => (prev === 'connected' ? 'disconnected' : 'connected'));
       }, 1000);
       return () => clearInterval(interval);
     }
   }, [simulateWebSocketIssues]);
 
   return (
-    <ErrorBoundary
-      onRetry={() => setErrorCount(0)}
-      key={`error-boundary-${errorCount}`}
-    >
+    <ErrorBoundary onRetry={() => setErrorCount(0)} key={`error-boundary-${errorCount}`}>
       <TasksSettingsProvider value={{ tasksEnabled: true }}>
         <MockWebSocketProvider connectionState={websocketState}>
           <ThemeProvider>
-            <div 
-              data-testid="full-app-simulation"
-              className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200"
+            <div
+              data-testid='full-app-simulation'
+              className='min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200'
             >
               {/* Header */}
-              <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex items-center justify-between">
-                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+              <header className='bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4'>
+                <div className='flex items-center justify-between'>
+                  <h1 className='text-xl font-semibold text-gray-900 dark:text-white'>
                     Claude Code UI
                   </h1>
-                  <div className="flex items-center space-x-2">
-                    <div 
-                      data-testid="connection-indicator"
+                  <div className='flex items-center space-x-2'>
+                    <div
+                      data-testid='connection-indicator'
                       className={`w-2 h-2 rounded-full ${
                         websocketState === 'connected' ? 'bg-green-500' : 'bg-red-500'
                       }`}
                     />
                     <button
-                      data-testid="theme-toggle"
+                      data-testid='theme-toggle'
                       onClick={() => {
                         document.documentElement.classList.toggle('dark');
                       }}
-                      className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                      className='p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded'
                     >
                       🌙/☀️
                     </button>
@@ -107,32 +102,34 @@ const FullAppSimulation = ({
               </header>
 
               {/* Main content area */}
-              <main className="pb-20 p-4">
+              <main className='pb-20 p-4'>
                 {simulateErrors && errorCount > 0 ? (
                   <ErrorProneContent />
                 ) : (
                   <StableContent activeTab={activeTab} />
                 )}
-                
+
                 {children}
 
                 {/* Test controls */}
-                <div className="fixed top-20 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg">
-                  <h3 className="font-semibold mb-2 text-gray-900 dark:text-white">Test Controls</h3>
-                  <div className="space-y-2">
+                <div className='fixed top-20 right-4 bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg'>
+                  <h3 className='font-semibold mb-2 text-gray-900 dark:text-white'>
+                    Test Controls
+                  </h3>
+                  <div className='space-y-2'>
                     <button
-                      data-testid="trigger-error"
+                      data-testid='trigger-error'
                       onClick={() => setErrorCount(1)}
-                      className="block w-full px-3 py-1 text-sm bg-red-500 text-white rounded"
+                      className='block w-full px-3 py-1 text-sm bg-red-500 text-white rounded'
                     >
                       Trigger Error
                     </button>
                     <input
-                      data-testid="focus-input"
-                      placeholder="Focus test"
+                      data-testid='focus-input'
+                      placeholder='Focus test'
                       onFocus={() => setIsInputFocused(true)}
                       onBlur={() => setIsInputFocused(false)}
-                      className="block w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className='block w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white'
                     />
                   </div>
                 </div>
@@ -157,28 +154,26 @@ const ErrorProneContent = () => {
 };
 
 const StableContent = ({ activeTab }) => (
-  <div data-testid="stable-content" className="space-y-4">
-    <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
-      <h2 className="text-lg font-medium text-blue-900 dark:text-blue-100">
+  <div data-testid='stable-content' className='space-y-4'>
+    <div className='bg-blue-50 dark:bg-blue-900 p-4 rounded-lg'>
+      <h2 className='text-lg font-medium text-blue-900 dark:text-blue-100'>
         Active Tab: {activeTab}
       </h2>
-      <p className="text-blue-700 dark:text-blue-300 mt-2">
+      <p className='text-blue-700 dark:text-blue-300 mt-2'>
         This content changes based on the active navigation tab.
       </p>
     </div>
 
     {/* Dynamic content grid */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
       {Array.from({ length: 8 }, (_, i) => (
         <div
           key={i}
           data-testid={`content-card-${i}`}
-          className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors duration-200"
+          className='p-4 bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors duration-200'
         >
-          <h3 className="font-medium text-gray-900 dark:text-white">
-            Content Block {i + 1}
-          </h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">
+          <h3 className='font-medium text-gray-900 dark:text-white'>Content Block {i + 1}</h3>
+          <p className='text-gray-600 dark:text-gray-300 text-sm mt-1'>
             This block demonstrates theme-aware styling and smooth transitions.
           </p>
         </div>
@@ -228,7 +223,7 @@ describe('Integration Stability Regression Tests', () => {
     mobileNavUtils.clearMeasurements();
     performanceBenchmark.clearMeasurements();
     webSocketMock.clearEvents();
-    
+
     document.documentElement.classList.remove('dark', 'no-transition', 'theme-transition');
     vi.clearAllMocks();
   });
@@ -247,23 +242,23 @@ describe('Integration Stability Regression Tests', () => {
 
       // Perform rapid theme switches
       const themeButton = screen.getByTestId('theme-toggle');
-      
+
       await act(async () => {
         // Switch themes multiple times
         for (let i = 0; i < 5; i++) {
           await userEvent.click(themeButton);
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       });
 
       const styles = await flashPromise;
-      
+
       // No component should flash during theme transitions
       expect(flashDetector.hasFlash(styles)).toBe(false);
 
       // Verify all components ended up with consistent theming
       const contentCards = screen.getAllByTestId(/content-card-/);
-      contentCards.forEach(card => {
+      contentCards.forEach((card) => {
         const computedStyle = window.getComputedStyle(card);
         expect(computedStyle.backgroundColor).not.toBe('');
       });
@@ -287,7 +282,7 @@ describe('Integration Stability Regression Tests', () => {
 
       // Navigate through tabs while monitoring theme consistency
       const tabs = ['shell', 'files', 'git', 'tasks', 'chat'];
-      
+
       for (const tab of tabs) {
         await act(async () => {
           await userEvent.click(screen.getByLabelText(tab));
@@ -295,7 +290,7 @@ describe('Integration Stability Regression Tests', () => {
 
         // Verify theme remains consistent
         expect(document.documentElement.classList.contains('dark')).toBe(true);
-        
+
         // Check that content updated for the tab
         await waitFor(() => {
           expect(screen.getByText(`Active Tab: ${tab}`)).toBeInTheDocument();
@@ -440,8 +435,8 @@ describe('Integration Stability Regression Tests', () => {
       });
 
       // Mobile nav should respond to input focus
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       await act(async () => {
         input.blur();
       });
@@ -479,7 +474,7 @@ describe('Integration Stability Regression Tests', () => {
               await userEvent.click(screen.getByLabelLabel(tabs[i % tabs.length]));
             });
 
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise((resolve) => setTimeout(resolve, 50));
           }
         }
       );
@@ -498,7 +493,7 @@ describe('Integration Stability Regression Tests', () => {
       });
 
       // Wait for connection state to change a few times
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 2500));
 
       // Verify connection indicator reflects state changes
       const indicator = screen.getByTestId('connection-indicator');
@@ -525,12 +520,7 @@ describe('Integration Stability Regression Tests', () => {
       const measurement = await performanceBenchmark.benchmark(
         'full-system-integration',
         async () => {
-          render(
-            <FullAppSimulation 
-              simulateWebSocketIssues={true}
-              simulateErrors={false}
-            />
-          );
+          render(<FullAppSimulation simulateWebSocketIssues={true} simulateErrors={false} />);
 
           await waitFor(() => {
             expect(screen.getByTestId('full-app-simulation')).toBeInTheDocument();
@@ -540,15 +530,15 @@ describe('Integration Stability Regression Tests', () => {
           const operations = [
             // Theme switches
             () => userEvent.click(screen.getByTestId('theme-toggle')),
-            
-            // Navigation changes  
+
+            // Navigation changes
             () => userEvent.click(screen.getByLabelLabel('shell')),
             () => userEvent.click(screen.getByLabelLabel('files')),
             () => userEvent.click(screen.getByLabelLabel('git')),
-            
+
             // Input focus/blur
             () => screen.getByTestId('focus-input').focus(),
-            () => screen.getByTestId('focus-input').blur(),
+            () => screen.getByTestId('focus-input').blur()
           ];
 
           // Execute operations in sequence
@@ -556,7 +546,7 @@ describe('Integration Stability Regression Tests', () => {
             await act(async () => {
               await operation();
             });
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise((resolve) => setTimeout(resolve, 50));
           }
         }
       );
@@ -573,33 +563,30 @@ describe('Integration Stability Regression Tests', () => {
         expect(screen.getByTestId('full-app-simulation')).toBeInTheDocument();
       });
 
-      const measurement = await performanceBenchmark.benchmark(
-        'stress-test',
-        async () => {
-          // Rapid-fire operations
-          for (let i = 0; i < 20; i++) {
-            const operations = [
-              screen.getByTestId('theme-toggle'),
-              screen.getByLabelLabel('shell'),
-              screen.getByLabelLabel('chat'),
-              screen.getByTestId('focus-input')
-            ];
+      const measurement = await performanceBenchmark.benchmark('stress-test', async () => {
+        // Rapid-fire operations
+        for (let i = 0; i < 20; i++) {
+          const operations = [
+            screen.getByTestId('theme-toggle'),
+            screen.getByLabelLabel('shell'),
+            screen.getByLabelLabel('chat'),
+            screen.getByTestId('focus-input')
+          ];
 
-            for (const element of operations) {
-              await act(async () => {
-                if (element.tagName === 'INPUT') {
-                  element.focus();
-                  await new Promise(resolve => setTimeout(resolve, 10));
-                  element.blur();
-                } else {
-                  await userEvent.click(element);
-                }
-              });
-              await new Promise(resolve => setTimeout(resolve, 10));
-            }
+          for (const element of operations) {
+            await act(async () => {
+              if (element.tagName === 'INPUT') {
+                element.focus();
+                await new Promise((resolve) => setTimeout(resolve, 10));
+                element.blur();
+              } else {
+                await userEvent.click(element);
+              }
+            });
+            await new Promise((resolve) => setTimeout(resolve, 10));
           }
         }
-      );
+      });
 
       // Should handle stress testing reasonably well
       expect(measurement.average).toBeLessThan(2000);

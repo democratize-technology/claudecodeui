@@ -1,10 +1,10 @@
 /**
  * ErrorBoundary Race Condition Regression Tests
- * 
+ *
  * These tests prevent the ErrorBoundary race condition bug from recurring.
  * The bug was caused by race conditions between `retryCount` and children prop changes,
  * leading to inconsistent error recovery states.
- * 
+ *
  * Fix: Added `isResetting` state to prevent race conditions during error recovery
  */
 
@@ -13,17 +13,14 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
 import ErrorBoundary from '../../components/ErrorBoundary';
-import { 
-  createErrorBoundaryTestUtils, 
-  createPerformanceBenchmark 
-} from '../utils/test-utils';
+import { createErrorBoundaryTestUtils, createPerformanceBenchmark } from '../utils/test-utils';
 
 // Mock component that can throw errors on demand
-const ErrorProneComponent = ({ 
-  shouldThrow = false, 
+const ErrorProneComponent = ({
+  shouldThrow = false,
   throwAfterDelay = 0,
   onRender,
-  version = 1 
+  version = 1
 }) => {
   React.useEffect(() => {
     if (onRender) onRender();
@@ -43,9 +40,7 @@ const ErrorProneComponent = ({
   }
 
   return (
-    <div data-testid="error-prone-content">
-      Content loaded successfully (version {version})
-    </div>
+    <div data-testid='error-prone-content'>Content loaded successfully (version {version})</div>
   );
 };
 
@@ -55,27 +50,27 @@ const RapidPropsChanger = ({ errorBoundaryRef }) => {
   const [shouldThrow, setShouldThrow] = React.useState(false);
 
   const triggerError = () => setShouldThrow(true);
-  const changeProps = () => setVersion(v => v + 1);
+  const changeProps = () => setVersion((v) => v + 1);
   const reset = () => {
     setShouldThrow(false);
-    setVersion(v => v + 1);
+    setVersion((v) => v + 1);
   };
 
   return (
     <div>
-      <button data-testid="trigger-error" onClick={triggerError}>
+      <button data-testid='trigger-error' onClick={triggerError}>
         Trigger Error
       </button>
-      <button data-testid="change-props" onClick={changeProps}>
+      <button data-testid='change-props' onClick={changeProps}>
         Change Props
       </button>
-      <button data-testid="reset-component" onClick={reset}>
+      <button data-testid='reset-component' onClick={reset}>
         Reset Component
       </button>
-      
+
       <ErrorBoundary ref={errorBoundaryRef} showDetails={true}>
-        <ErrorProneComponent 
-          shouldThrow={shouldThrow} 
+        <ErrorProneComponent
+          shouldThrow={shouldThrow}
           version={version}
           key={`error-component-${version}`}
         />
@@ -92,7 +87,7 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
   beforeEach(() => {
     errorBoundaryUtils = createErrorBoundaryTestUtils();
     performanceBenchmark = createPerformanceBenchmark();
-    
+
     // Suppress error boundary console logs during tests
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -107,7 +102,7 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
   describe('Race Condition Prevention', () => {
     it('should prevent race conditions during retry button clicks', async () => {
       const errorBoundaryRef = React.createRef();
-      
+
       render(<RapidPropsChanger errorBoundaryRef={errorBoundaryRef} />);
 
       // Trigger an error
@@ -127,30 +122,33 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
       // Rapidly click retry multiple times (simulate race condition)
       const retryButton = screen.getByText(/Try Again/);
-      
+
       await act(async () => {
         // Click retry button multiple times rapidly
         for (let i = 0; i < 5; i++) {
           await userEvent.click(retryButton);
           // Small delay to allow state updates
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
       });
 
       // Wait for all state changes to settle
-      await waitFor(() => {
-        expect(screen.getByTestId('error-prone-content')).toBeInTheDocument();
-      }, { timeout: 2000 });
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('error-prone-content')).toBeInTheDocument();
+        },
+        { timeout: 2000 }
+      );
 
       // Verify no race conditions occurred
       expect(errorBoundaryUtils.hasRaceCondition()).toBe(false);
 
       const stateChanges = errorBoundaryUtils.getStateChanges();
-      
+
       // Verify isResetting flag was used correctly
-      const resettingStates = stateChanges.filter(change => change.isResetting);
+      const resettingStates = stateChanges.filter((change) => change.isResetting);
       expect(resettingStates.length).toBeGreaterThan(0);
-      
+
       // Verify all resetting states eventually resolved
       const finalState = stateChanges[stateChanges.length - 1]?.newState;
       expect(finalState?.isResetting).toBe(false);
@@ -159,7 +157,7 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
     it('should handle rapid prop changes without race conditions', async () => {
       const errorBoundaryRef = React.createRef();
-      
+
       render(<RapidPropsChanger errorBoundaryRef={errorBoundaryRef} />);
 
       // Trigger error
@@ -180,7 +178,7 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
       await act(async () => {
         for (let i = 0; i < 3; i++) {
           await userEvent.click(screen.getByTestId('change-props'));
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise((resolve) => setTimeout(resolve, 50));
         }
       });
 
@@ -199,38 +197,30 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
     it('should handle componentDidUpdate race conditions', async () => {
       let errorBoundaryInstance;
-      
+
       const TestComponent = () => {
         const [key, setKey] = React.useState(1);
         const [shouldError, setShouldError] = React.useState(false);
 
         return (
           <div>
-            <button 
-              data-testid="change-children" 
-              onClick={() => setKey(k => k + 1)}
-            >
+            <button data-testid='change-children' onClick={() => setKey((k) => k + 1)}>
               Change Children
             </button>
-            <button 
-              data-testid="trigger-error-delayed" 
-              onClick={() => setShouldError(true)}
-            >
+            <button data-testid='trigger-error-delayed' onClick={() => setShouldError(true)}>
               Trigger Error
             </button>
-            
-            <ErrorBoundary 
-              ref={ref => { errorBoundaryInstance = ref; }}
+
+            <ErrorBoundary
+              ref={(ref) => {
+                errorBoundaryInstance = ref;
+              }}
               onRetry={() => {
                 setShouldError(false);
-                setKey(k => k + 1);
+                setKey((k) => k + 1);
               }}
             >
-              <ErrorProneComponent 
-                key={key} 
-                shouldThrow={shouldError}
-                version={key}
-              />
+              <ErrorProneComponent key={key} shouldThrow={shouldError} version={key} />
             </ErrorBoundary>
           </div>
         );
@@ -256,11 +246,11 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
       await act(async () => {
         // Start retry process
         const retryPromise = userEvent.click(screen.getByText(/Try Again/));
-        
+
         // Quickly change children during retry
-        await new Promise(resolve => setTimeout(resolve, 5)); // Minimal delay
+        await new Promise((resolve) => setTimeout(resolve, 5)); // Minimal delay
         await userEvent.click(screen.getByTestId('change-children'));
-        
+
         await retryPromise;
       });
 
@@ -283,15 +273,14 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
         return (
           <div>
-            <button 
-              data-testid="cause-error" 
-              onClick={() => setShouldThrow(true)}
-            >
+            <button data-testid='cause-error' onClick={() => setShouldThrow(true)}>
               Cause Error
             </button>
-            
-            <ErrorBoundary 
-              ref={ref => { errorInstance = ref; }}
+
+            <ErrorBoundary
+              ref={(ref) => {
+                errorInstance = ref;
+              }}
               onRetry={() => {
                 onRetry();
                 setShouldThrow(false);
@@ -350,7 +339,7 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
       });
 
       const retryButton = screen.getByText(/Try Again/);
-      
+
       // Click and immediately check for loading state
       await act(async () => {
         await userEvent.click(retryButton);
@@ -370,21 +359,17 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
         return (
           <div>
-            <button 
-              data-testid="fix-error" 
-              onClick={() => setShouldThrow(false)}
-            >
+            <button data-testid='fix-error' onClick={() => setShouldThrow(false)}>
               Fix Error
             </button>
-            
-            <ErrorBoundary 
-              ref={ref => { errorInstance = ref; }}
-              onRetry={() => setAttemptCount(c => c + 1)}
+
+            <ErrorBoundary
+              ref={(ref) => {
+                errorInstance = ref;
+              }}
+              onRetry={() => setAttemptCount((c) => c + 1)}
             >
-              <ErrorProneComponent 
-                shouldThrow={shouldThrow} 
-                version={attemptCount}
-              />
+              <ErrorProneComponent shouldThrow={shouldThrow} version={attemptCount} />
             </ErrorBoundary>
           </div>
         );
@@ -442,20 +427,17 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
         expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
       });
 
-      const measurement = await performanceBenchmark.benchmark(
-        'error-recovery',
-        async () => {
-          await act(async () => {
-            // Fix the error by rerendering with shouldError=false
-            rerender(<TestComponent shouldError={false} />);
-            await userEvent.click(screen.getByText(/Try Again/));
-          });
+      const measurement = await performanceBenchmark.benchmark('error-recovery', async () => {
+        await act(async () => {
+          // Fix the error by rerendering with shouldError=false
+          rerender(<TestComponent shouldError={false} />);
+          await userEvent.click(screen.getByText(/Try Again/));
+        });
 
-          await waitFor(() => {
-            expect(screen.getByTestId('error-prone-content')).toBeInTheDocument();
-          });
-        }
-      );
+        await waitFor(() => {
+          expect(screen.getByTestId('error-prone-content')).toBeInTheDocument();
+        });
+      });
 
       // Error recovery should be fast (under 100ms)
       expect(measurement.average).toBeLessThan(100);
@@ -469,22 +451,23 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
         return (
           <div>
-            <button 
-              data-testid="cycle-error" 
+            <button
+              data-testid='cycle-error'
               onClick={() => {
                 setShouldThrow(true);
                 setTimeout(() => setShouldThrow(false), 10);
-                setErrorCount(c => c + 1);
+                setErrorCount((c) => c + 1);
               }}
             >
               Cycle Error
             </button>
-            
-            <ErrorBoundary ref={ref => { errorInstance = ref; }}>
-              <ErrorProneComponent 
-                shouldThrow={shouldThrow}
-                key={errorCount}
-              />
+
+            <ErrorBoundary
+              ref={(ref) => {
+                errorInstance = ref;
+              }}
+            >
+              <ErrorProneComponent shouldThrow={shouldThrow} key={errorCount} />
             </ErrorBoundary>
           </div>
         );
@@ -502,9 +485,12 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
             });
 
             // Wait for error state
-            await waitFor(() => {
-              expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
-            }, { timeout: 1000 });
+            await waitFor(
+              () => {
+                expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
+              },
+              { timeout: 1000 }
+            );
 
             // Retry
             await act(async () => {
@@ -512,9 +498,12 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
             });
 
             // Wait for recovery
-            await waitFor(() => {
-              expect(screen.getByTestId('error-prone-content')).toBeInTheDocument();
-            }, { timeout: 1000 });
+            await waitFor(
+              () => {
+                expect(screen.getByTestId('error-prone-content')).toBeInTheDocument();
+              },
+              { timeout: 1000 }
+            );
           }
         },
         1
@@ -539,7 +528,7 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
       // Should show error details toggle
       expect(screen.getByText(/Error Details/)).toBeInTheDocument();
-      
+
       // Click to expand details
       await act(async () => {
         await userEvent.click(screen.getByText(/Error Details/));

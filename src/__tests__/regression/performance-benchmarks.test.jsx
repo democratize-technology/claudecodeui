@@ -1,6 +1,6 @@
 /**
  * Performance Benchmarking Framework
- * 
+ *
  * This test suite provides comprehensive performance regression testing to ensure
  * the UI remains fast and responsive after bug fixes. It benchmarks critical
  * operations and provides performance budgets to prevent regressions.
@@ -14,19 +14,19 @@ import { ThemeProvider } from '../../contexts/ThemeContext';
 import { TasksSettingsProvider } from '../../contexts/TasksSettingsContext';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import MobileNav from '../../components/MobileNav';
-import { 
-  createPerformanceBenchmark, 
+import {
+  createPerformanceBenchmark,
   createThemeTestUtils,
   createMobileNavTestUtils,
-  createWebSocketMock 
+  createWebSocketMock
 } from '../utils/test-utils';
 
 // Comprehensive app component for integration testing
-const IntegratedApp = ({ 
+const IntegratedApp = ({
   initialTheme = 'light',
   enableTasks = false,
   simulateError = false,
-  children 
+  children
 }) => {
   const [activeTab, setActiveTab] = React.useState('chat');
   const [isInputFocused, setIsInputFocused] = React.useState(false);
@@ -35,24 +35,24 @@ const IntegratedApp = ({
     <ErrorBoundary>
       <TasksSettingsProvider value={{ tasksEnabled: enableTasks }}>
         <ThemeProvider>
-          <div data-testid="integrated-app" className="min-h-screen bg-white dark:bg-gray-900">
-            <main className="pb-16">
+          <div data-testid='integrated-app' className='min-h-screen bg-white dark:bg-gray-900'>
+            <main className='pb-16'>
               {simulateError && <ErrorProneChild />}
               {children || <DefaultAppContent />}
             </main>
-            
-            <MobileNav 
+
+            <MobileNav
               activeTab={activeTab}
               setActiveTab={setActiveTab}
               isInputFocused={isInputFocused}
             />
-            
+
             <input
-              data-testid="focus-input"
+              data-testid='focus-input'
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => setIsInputFocused(false)}
-              placeholder="Test input for mobile nav behavior"
-              className="fixed top-4 left-4 p-2 border rounded"
+              placeholder='Test input for mobile nav behavior'
+              className='fixed top-4 left-4 p-2 border rounded'
             />
           </div>
         </ThemeProvider>
@@ -66,16 +66,16 @@ const ErrorProneChild = () => {
 };
 
 const DefaultAppContent = () => (
-  <div className="p-4">
-    <h1 data-testid="app-title" className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+  <div className='p-4'>
+    <h1 data-testid='app-title' className='text-2xl font-bold mb-4 text-gray-900 dark:text-white'>
       Claude Code UI
     </h1>
-    <div className="grid gap-4">
+    <div className='grid gap-4'>
       {Array.from({ length: 20 }, (_, i) => (
-        <div 
+        <div
           key={i}
           data-testid={`content-block-${i}`}
-          className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+          className='p-4 bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors'
         >
           Content block {i + 1} with theme-aware styling
         </div>
@@ -140,7 +140,7 @@ describe('Performance Benchmarking Framework', () => {
         'full-app-initial-render',
         async () => {
           render(<IntegratedApp />);
-          
+
           await waitFor(() => {
             expect(screen.getByTestId('integrated-app')).toBeInTheDocument();
             expect(screen.getByTestId('app-title')).toBeInTheDocument();
@@ -149,7 +149,9 @@ describe('Performance Benchmarking Framework', () => {
       );
 
       expect(measurement.average).toBeLessThan(PERFORMANCE_BUDGETS.FULL_APP_RENDER);
-      console.log(`✅ Initial render: ${measurement.average.toFixed(2)}ms (budget: ${PERFORMANCE_BUDGETS.FULL_APP_RENDER}ms)`);
+      console.log(
+        `✅ Initial render: ${measurement.average.toFixed(2)}ms (budget: ${PERFORMANCE_BUDGETS.FULL_APP_RENDER}ms)`
+      );
     });
 
     it('should render with different theme configurations efficiently', async () => {
@@ -166,35 +168,34 @@ describe('Performance Benchmarking Framework', () => {
           async () => {
             // Pre-set theme in localStorage to simulate saved preference
             themeUtils.mockLocalStorage.getItem.mockReturnValue(config.initialTheme);
-            
+
             const { unmount } = render(
-              <IntegratedApp 
-                initialTheme={config.initialTheme}
-                enableTasks={config.enableTasks}
-              />
+              <IntegratedApp initialTheme={config.initialTheme} enableTasks={config.enableTasks} />
             );
-            
+
             await waitFor(() => {
               expect(screen.getByTestId('integrated-app')).toBeInTheDocument();
             });
-            
+
             unmount();
           }
         );
 
         expect(measurement.average).toBeLessThan(PERFORMANCE_BUDGETS.INITIAL_RENDER);
-        console.log(`✅ ${config.initialTheme} theme, tasks ${config.enableTasks ? 'enabled' : 'disabled'}: ${measurement.average.toFixed(2)}ms`);
+        console.log(
+          `✅ ${config.initialTheme} theme, tasks ${config.enableTasks ? 'enabled' : 'disabled'}: ${measurement.average.toFixed(2)}ms`
+        );
       }
     });
 
     it('should handle large content rendering efficiently', async () => {
       const LargeContentApp = () => (
         <IntegratedApp>
-          <div className="grid gap-2">
+          <div className='grid gap-2'>
             {Array.from({ length: 100 }, (_, i) => (
-              <div 
+              <div
                 key={i}
-                className="p-2 bg-blue-50 dark:bg-blue-900 rounded text-sm transition-colors"
+                className='p-2 bg-blue-50 dark:bg-blue-900 rounded text-sm transition-colors'
               >
                 Large content item {i + 1} with dynamic styling
               </div>
@@ -203,18 +204,15 @@ describe('Performance Benchmarking Framework', () => {
         </IntegratedApp>
       );
 
-      const measurement = await performanceBenchmark.benchmark(
-        'large-content-render',
-        async () => {
-          render(<LargeContentApp />);
-          
-          await waitFor(() => {
-            expect(screen.getByTestId('integrated-app')).toBeInTheDocument();
-            // Wait for a reasonable amount of content to be present
-            expect(document.querySelectorAll('[class*="bg-blue-50"]')).toHaveLength(100);
-          });
-        }
-      );
+      const measurement = await performanceBenchmark.benchmark('large-content-render', async () => {
+        render(<LargeContentApp />);
+
+        await waitFor(() => {
+          expect(screen.getByTestId('integrated-app')).toBeInTheDocument();
+          // Wait for a reasonable amount of content to be present
+          expect(document.querySelectorAll('[class*="bg-blue-50"]')).toHaveLength(100);
+        });
+      });
 
       // Large content should still render reasonably fast
       expect(measurement.average).toBeLessThan(PERFORMANCE_BUDGETS.FULL_APP_RENDER * 1.5);
@@ -248,7 +246,9 @@ describe('Performance Benchmarking Framework', () => {
       );
 
       expect(measurement.average).toBeLessThan(PERFORMANCE_BUDGETS.THEME_SWITCH);
-      console.log(`✅ Theme switch: ${measurement.average.toFixed(2)}ms (budget: ${PERFORMANCE_BUDGETS.THEME_SWITCH}ms)`);
+      console.log(
+        `✅ Theme switch: ${measurement.average.toFixed(2)}ms (budget: ${PERFORMANCE_BUDGETS.THEME_SWITCH}ms)`
+      );
     });
 
     it('should handle rapid theme switches without performance degradation', async () => {
@@ -258,21 +258,18 @@ describe('Performance Benchmarking Framework', () => {
         expect(screen.getByTestId('integrated-app')).toBeInTheDocument();
       });
 
-      const measurement = await performanceBenchmark.benchmark(
-        'rapid-theme-switches',
-        async () => {
-          // Switch themes rapidly 10 times
-          for (let i = 0; i < 10; i++) {
-            act(() => {
-              document.documentElement.classList.toggle('dark');
-            });
-            await new Promise(resolve => setTimeout(resolve, 10));
-          }
-
-          // Wait for final state to settle
-          await new Promise(resolve => setTimeout(resolve, 100));
+      const measurement = await performanceBenchmark.benchmark('rapid-theme-switches', async () => {
+        // Switch themes rapidly 10 times
+        for (let i = 0; i < 10; i++) {
+          act(() => {
+            document.documentElement.classList.toggle('dark');
+          });
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
-      );
+
+        // Wait for final state to settle
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      });
 
       // Should handle rapid switches efficiently
       expect(measurement.average).toBeLessThan(PERFORMANCE_BUDGETS.THEME_SWITCH * 2);
@@ -289,13 +286,13 @@ describe('Performance Benchmarking Framework', () => {
       });
 
       const tabs = ['chat', 'shell', 'files', 'git', 'tasks'];
-      
+
       const measurement = await performanceBenchmark.benchmark(
         'tab-navigation-performance',
         async () => {
           for (const tab of tabs) {
             const tabButton = screen.getByLabelText(tab);
-            
+
             await act(async () => {
               await userEvent.click(tabButton);
             });
@@ -323,19 +320,19 @@ describe('Performance Benchmarking Framework', () => {
           // Hide navigation
           rerender(<IntegratedApp />);
           const input = screen.getByTestId('focus-input');
-          
+
           await act(async () => {
             input.focus();
           });
 
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
 
           // Show navigation
           await act(async () => {
             input.blur();
           });
 
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       );
 
@@ -359,7 +356,7 @@ describe('Performance Benchmarking Framework', () => {
         async () => {
           // Click retry button
           const retryButton = screen.getByText(/Try Again/);
-          
+
           await act(async () => {
             await userEvent.click(retryButton);
           });
@@ -382,9 +379,9 @@ describe('Performance Benchmarking Framework', () => {
     it('should handle prop updates efficiently', async () => {
       const TestComponent = ({ count }) => (
         <IntegratedApp>
-          <div data-testid="dynamic-content">
+          <div data-testid='dynamic-content'>
             {Array.from({ length: count }, (_, i) => (
-              <div key={i} className="p-1 bg-gray-100 dark:bg-gray-800 transition-colors">
+              <div key={i} className='p-1 bg-gray-100 dark:bg-gray-800 transition-colors'>
                 Item {i}
               </div>
             ))}
@@ -398,24 +395,21 @@ describe('Performance Benchmarking Framework', () => {
         expect(screen.getByTestId('integrated-app')).toBeInTheDocument();
       });
 
-      const measurement = await performanceBenchmark.benchmark(
-        'component-updates',
-        async () => {
-          // Update with more items
-          rerender(<TestComponent count={50} />);
+      const measurement = await performanceBenchmark.benchmark('component-updates', async () => {
+        // Update with more items
+        rerender(<TestComponent count={50} />);
 
-          await waitFor(() => {
-            expect(screen.getByTestId('dynamic-content').children).toHaveLength(50);
-          });
+        await waitFor(() => {
+          expect(screen.getByTestId('dynamic-content').children).toHaveLength(50);
+        });
 
-          // Update with fewer items
-          rerender(<TestComponent count={25} />);
+        // Update with fewer items
+        rerender(<TestComponent count={25} />);
 
-          await waitFor(() => {
-            expect(screen.getByTestId('dynamic-content').children).toHaveLength(25);
-          });
-        }
-      );
+        await waitFor(() => {
+          expect(screen.getByTestId('dynamic-content').children).toHaveLength(25);
+        });
+      });
 
       expect(measurement.average).toBeLessThan(PERFORMANCE_BUDGETS.COMPONENT_UPDATE * 2);
       console.log(`✅ Component updates: ${measurement.average.toFixed(2)}ms`);
@@ -433,28 +427,25 @@ describe('Performance Benchmarking Framework', () => {
 
       const initialMemory = performance.memory?.usedJSHeapSize || 0;
 
-      const measurement = await performanceBenchmark.benchmark(
-        'memory-leak-test',
-        async () => {
-          // Perform operations that historically caused memory leaks
-          for (let i = 0; i < 10; i++) {
-            // Theme switches
-            act(() => {
-              document.documentElement.classList.toggle('dark');
-            });
+      const measurement = await performanceBenchmark.benchmark('memory-leak-test', async () => {
+        // Perform operations that historically caused memory leaks
+        for (let i = 0; i < 10; i++) {
+          // Theme switches
+          act(() => {
+            document.documentElement.classList.toggle('dark');
+          });
 
-            // Component re-renders
-            rerender(<IntegratedApp key={i} enableTasks={i % 2 === 0} />);
+          // Component re-renders
+          rerender(<IntegratedApp key={i} enableTasks={i % 2 === 0} />);
 
-            await new Promise(resolve => setTimeout(resolve, 10));
-          }
-
-          // Force garbage collection if available
-          if (global.gc) {
-            global.gc();
-          }
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
-      );
+
+        // Force garbage collection if available
+        if (global.gc) {
+          global.gc();
+        }
+      });
 
       const finalMemory = performance.memory?.usedJSHeapSize || 0;
       const memoryIncrease = finalMemory - initialMemory;
@@ -474,15 +465,15 @@ describe('Performance Benchmarking Framework', () => {
   describe('Performance Budget Summary', () => {
     it('should log performance summary', () => {
       const measurements = performanceBenchmark.getMeasurements();
-      
+
       console.log('\n📊 Performance Budget Summary:');
       console.log('================================');
-      
+
       Object.entries(PERFORMANCE_BUDGETS).forEach(([operation, budget]) => {
-        const measurement = measurements.find(m => 
+        const measurement = measurements.find((m) =>
           m.name.toLowerCase().includes(operation.toLowerCase())
         );
-        
+
         if (measurement) {
           const status = measurement.average <= budget ? '✅' : '❌';
           console.log(`${status} ${operation}: ${measurement.average.toFixed(2)}ms / ${budget}ms`);
@@ -490,7 +481,7 @@ describe('Performance Benchmarking Framework', () => {
           console.log(`⚪ ${operation}: Not tested / ${budget}ms`);
         }
       });
-      
+
       console.log('================================\n');
     });
   });

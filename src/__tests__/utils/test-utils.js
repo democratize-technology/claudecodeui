@@ -1,6 +1,6 @@
 /**
  * Comprehensive UI Regression Test Utilities
- * 
+ *
  * This module provides utilities for testing UI stability, preventing the critical
  * bugs from recurring: FOUC, dark mode flashing, mobile nav issues, and ErrorBoundary
  * race conditions.
@@ -32,9 +32,15 @@ export const createThemeTestUtils = () => {
     let store = {};
     return {
       getItem: vi.fn((key) => store[key] || null),
-      setItem: vi.fn((key, value) => { store[key] = value.toString(); }),
-      removeItem: vi.fn((key) => { delete store[key]; }),
-      clear: vi.fn(() => { store = {}; }),
+      setItem: vi.fn((key, value) => {
+        store[key] = value.toString();
+      }),
+      removeItem: vi.fn((key) => {
+        delete store[key];
+      }),
+      clear: vi.fn(() => {
+        store = {};
+      }),
       length: 0,
       key: vi.fn()
     };
@@ -64,8 +70,8 @@ export const createThemeTestUtils = () => {
           const classList = mutation.target.classList;
           transitionEvents.push({
             timestamp: performance.now(),
-            added: [...classList].filter(c => !mutation.oldValue?.includes(c)),
-            removed: mutation.oldValue?.split(' ').filter(c => !classList.contains(c)) || [],
+            added: [...classList].filter((c) => !mutation.oldValue?.includes(c)),
+            removed: mutation.oldValue?.split(' ').filter((c) => !classList.contains(c)) || [],
             hasNoTransition: classList.contains('no-transition'),
             hasThemeTransition: classList.contains('theme-transition'),
             isDark: classList.contains('dark')
@@ -74,8 +80,8 @@ export const createThemeTestUtils = () => {
       });
     });
 
-    observer.observe(element, { 
-      attributes: true, 
+    observer.observe(element, {
+      attributes: true,
       attributeOldValue: true,
       attributeFilter: ['class']
     });
@@ -109,7 +115,7 @@ export const createFlashDetector = () => {
   const detectFlash = (element, duration = 500) => {
     return new Promise((resolve) => {
       const startTime = performance.now();
-      
+
       const measureStyles = () => {
         const computed = window.getComputedStyle(element);
         computedStyles.push({
@@ -136,16 +142,16 @@ export const createFlashDetector = () => {
     for (let i = 1; i < styles.length; i++) {
       const prev = styles[i - 1];
       const curr = styles[i];
-      
+
       // If background color changes rapidly (within 100ms) and then changes back
-      if (
-        prev.backgroundColor !== curr.backgroundColor &&
-        curr.timestamp - prev.timestamp < 100
-      ) {
+      if (prev.backgroundColor !== curr.backgroundColor && curr.timestamp - prev.timestamp < 100) {
         // Look for a change back within next 100ms
         const next = styles[i + 1];
-        if (next && next.backgroundColor !== curr.backgroundColor &&
-            next.timestamp - curr.timestamp < 100) {
+        if (
+          next &&
+          next.backgroundColor !== curr.backgroundColor &&
+          next.timestamp - curr.timestamp < 100
+        ) {
           return true;
         }
       }
@@ -166,27 +172,27 @@ export const createFlashDetector = () => {
 // Error boundary race condition test utility
 export const createErrorBoundaryTestUtils = () => {
   const stateChanges = [];
-  
+
   // Component that can throw errors on command
   const ThrowError = ({ shouldThrow = false, onRender }) => {
     if (onRender) onRender();
     if (shouldThrow) {
       throw new Error('Test error for ErrorBoundary');
     }
-    return <div data-testid="error-free-content">Content loaded successfully</div>;
+    return <div data-testid='error-free-content'>Content loaded successfully</div>;
   };
 
   // Track state changes in ErrorBoundary
   const trackStateChanges = (errorBoundaryInstance) => {
     const originalSetState = errorBoundaryInstance.setState;
-    errorBoundaryInstance.setState = function(updater, callback) {
+    errorBoundaryInstance.setState = function (updater, callback) {
       const prevState = { ...this.state };
-      
+
       originalSetState.call(this, updater, (newState) => {
         stateChanges.push({
           timestamp: performance.now(),
           prevState,
-          newState: { ...newState || this.state },
+          newState: { ...(newState || this.state) },
           isResetting: newState?.isResetting || this.state.isResetting
         });
         if (callback) callback.call(this, newState);
@@ -198,15 +204,17 @@ export const createErrorBoundaryTestUtils = () => {
     ThrowError,
     trackStateChanges,
     getStateChanges: () => stateChanges,
-    clearStateChanges: () => { stateChanges.length = 0; },
+    clearStateChanges: () => {
+      stateChanges.length = 0;
+    },
     hasRaceCondition: () => {
       // Check if multiple setState calls happen within 50ms while isResetting is true
       for (let i = 1; i < stateChanges.length; i++) {
         const prev = stateChanges[i - 1];
         const curr = stateChanges[i];
-        
+
         if (
-          prev.isResetting && 
+          prev.isResetting &&
           curr.timestamp - prev.timestamp < 50 &&
           prev.newState.hasError !== curr.newState.hasError
         ) {
@@ -226,7 +234,7 @@ export const createMobileNavTestUtils = () => {
   // Mock touch events
   const mockTouchEvent = (type, touches = []) => ({
     type,
-    touches: touches.map(touch => ({
+    touches: touches.map((touch) => ({
       clientX: touch.x || 0,
       clientY: touch.y || 0,
       target: touch.target || document.body
@@ -256,7 +264,7 @@ export const createMobileNavTestUtils = () => {
       transitionMeasurements.push({
         name: `css-transition-${e.propertyName}`,
         duration: e.elapsedTime * 1000, // Convert to ms
-        startTime: performance.now() - (e.elapsedTime * 1000)
+        startTime: performance.now() - e.elapsedTime * 1000
       });
     };
 
@@ -283,7 +291,7 @@ export const createMobileNavTestUtils = () => {
 // FOUC detection utility
 export const createFOUCDetector = () => {
   const styleSnapshots = [];
-  
+
   const captureInitialStyles = (element = document.documentElement) => {
     const snapshot = {
       timestamp: performance.now(),
@@ -294,7 +302,7 @@ export const createFOUCDetector = () => {
         color: window.getComputedStyle(element).color
       }
     };
-    
+
     styleSnapshots.push(snapshot);
     return snapshot;
   };
@@ -306,24 +314,23 @@ export const createFOUCDetector = () => {
     // 1. Initial style changes rapidly (within 100ms)
     // 2. 'no-transition' class is not present during style changes
     // 3. Background/color values change and then stabilize
-    
+
     for (let i = 1; i < snapshots.length; i++) {
       const prev = snapshots[i - 1];
       const curr = snapshots[i];
-      
-      const hasStyleChange = (
+
+      const hasStyleChange =
         prev.computedStyle.backgroundColor !== curr.computedStyle.backgroundColor ||
-        prev.computedStyle.color !== curr.computedStyle.color
-      );
-      
+        prev.computedStyle.color !== curr.computedStyle.color;
+
       const isRapidChange = curr.timestamp - prev.timestamp < 100;
       const lacksTransitionProtection = !curr.hasNoTransition;
-      
+
       if (hasStyleChange && isRapidChange && lacksTransitionProtection) {
         return true;
       }
     }
-    
+
     return false;
   };
 
@@ -331,14 +338,16 @@ export const createFOUCDetector = () => {
     captureInitialStyles,
     detectFOUC,
     getSnapshots: () => styleSnapshots,
-    clearSnapshots: () => { styleSnapshots.length = 0; }
+    clearSnapshots: () => {
+      styleSnapshots.length = 0;
+    }
   };
 };
 
 // WebSocket mock utility for integration tests
 export const createWebSocketMock = () => {
   const events = [];
-  
+
   class MockWebSocket {
     constructor(url) {
       this.url = url;
@@ -347,61 +356,63 @@ export const createWebSocketMock = () => {
       this.onclose = null;
       this.onmessage = null;
       this.onerror = null;
-      
+
       // Simulate connection
       setTimeout(() => {
         this.readyState = WebSocket.OPEN;
         if (this.onopen) this.onopen({ type: 'open' });
       }, 10);
     }
-    
+
     send(data) {
       events.push({ type: 'send', data, timestamp: performance.now() });
     }
-    
+
     close() {
       this.readyState = WebSocket.CLOSED;
       if (this.onclose) this.onclose({ type: 'close' });
     }
-    
+
     simulateMessage(data) {
       if (this.onmessage) {
         this.onmessage({ type: 'message', data });
       }
     }
   }
-  
+
   // Constants
   MockWebSocket.CONNECTING = 0;
   MockWebSocket.OPEN = 1;
   MockWebSocket.CLOSING = 2;
   MockWebSocket.CLOSED = 3;
-  
+
   return {
     MockWebSocket,
     getEvents: () => events,
-    clearEvents: () => { events.length = 0; }
+    clearEvents: () => {
+      events.length = 0;
+    }
   };
 };
 
 // Performance benchmarking utility
 export const createPerformanceBenchmark = () => {
   const measurements = [];
-  
+
   const benchmark = async (name, fn, iterations = 1) => {
     const results = [];
-    
+
     for (let i = 0; i < iterations; i++) {
       const start = performance.now();
       await fn();
       const end = performance.now();
       results.push(end - start);
     }
-    
+
     const avg = results.reduce((sum, time) => sum + time, 0) / results.length;
     const min = Math.min(...results);
     const max = Math.max(...results);
-    
+
     const measurement = {
       name,
       iterations,
@@ -410,14 +421,16 @@ export const createPerformanceBenchmark = () => {
       max,
       results
     };
-    
+
     measurements.push(measurement);
     return measurement;
   };
-  
+
   return {
     benchmark,
     getMeasurements: () => measurements,
-    clearMeasurements: () => { measurements.length = 0; }
+    clearMeasurements: () => {
+      measurements.length = 0;
+    }
   };
 };

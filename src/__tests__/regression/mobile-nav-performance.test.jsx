@@ -1,9 +1,9 @@
 /**
  * MobileNav Performance and Transition Regression Tests
- * 
+ *
  * These tests prevent mobile navigation flashing and performance issues from recurring.
  * The bugs were caused by missing state synchronization and lack of performance optimizations.
- * 
+ *
  * Fix: Added `willChange` CSS property and improved transitions
  */
 
@@ -13,21 +13,19 @@ import userEvent from '@testing-library/user-event';
 import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
 import MobileNav from '../../components/MobileNav';
 import { TasksSettingsProvider } from '../../contexts/TasksSettingsContext';
-import { 
-  createMobileNavTestUtils, 
+import {
+  createMobileNavTestUtils,
   createPerformanceBenchmark,
   createFlashDetector
 } from '../utils/test-utils';
 
 // Mock the TasksSettingsContext for testing
 const MockTasksSettingsProvider = ({ children, tasksEnabled = false }) => (
-  <TasksSettingsProvider value={{ tasksEnabled }}>
-    {children}
-  </TasksSettingsProvider>
+  <TasksSettingsProvider value={{ tasksEnabled }}>{children}</TasksSettingsProvider>
 );
 
 // Test wrapper component
-const MobileNavTestWrapper = ({ 
+const MobileNavTestWrapper = ({
   initialTab = 'chat',
   isInputFocused = false,
   tasksEnabled = false,
@@ -42,7 +40,7 @@ const MobileNavTestWrapper = ({
 
   return (
     <MockTasksSettingsProvider tasksEnabled={tasksEnabled}>
-      <div data-testid="mobile-nav-container">
+      <div data-testid='mobile-nav-container'>
         <MobileNav
           activeTab={activeTab}
           setActiveTab={handleSetActiveTab}
@@ -92,9 +90,7 @@ describe('MobileNav Performance Regression Tests', () => {
 
   describe('Transition Performance', () => {
     it('should animate hide/show transitions smoothly without flashing', async () => {
-      const { rerender } = render(
-        <MobileNavTestWrapper isInputFocused={false} />
-      );
+      const { rerender } = render(<MobileNavTestWrapper isInputFocused={false} />);
 
       const navContainer = screen.getByTestId('mobile-nav-container');
       const mobileNavElement = navContainer.querySelector('[class*="fixed bottom-0"]');
@@ -130,24 +126,22 @@ describe('MobileNav Performance Regression Tests', () => {
 
       // Check transition performance
       const measurements = mobileNavUtils.getTransitionMeasurements();
-      
+
       // Should have recorded transition events
       expect(measurements.length).toBeGreaterThan(0);
-      
+
       // Transitions should be fast (< 300ms as per CSS)
       const transitionDurations = measurements
-        .filter(m => m.name.includes('transform'))
-        .map(m => m.duration);
-      
+        .filter((m) => m.name.includes('transform'))
+        .map((m) => m.duration);
+
       if (transitionDurations.length > 0) {
         expect(Math.max(...transitionDurations)).toBeLessThan(350); // Allow some buffer
       }
     });
 
     it('should use willChange property for optimized transitions', async () => {
-      const { rerender } = render(
-        <MobileNavTestWrapper isInputFocused={false} />
-      );
+      const { rerender } = render(<MobileNavTestWrapper isInputFocused={false} />);
 
       const navContainer = screen.getByTestId('mobile-nav-container');
       const mobileNavElement = navContainer.querySelector('[class*="fixed bottom-0"]');
@@ -177,9 +171,7 @@ describe('MobileNav Performance Regression Tests', () => {
     });
 
     it('should handle rapid show/hide cycles without performance degradation', async () => {
-      const { rerender } = render(
-        <MobileNavTestWrapper isInputFocused={false} />
-      );
+      const { rerender } = render(<MobileNavTestWrapper isInputFocused={false} />);
 
       const measurement = await performanceBenchmark.benchmark(
         'rapid-nav-transitions',
@@ -190,7 +182,7 @@ describe('MobileNav Performance Regression Tests', () => {
               rerender(<MobileNavTestWrapper isInputFocused={i % 2 === 0} />);
             });
             // Small delay to allow transition start
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await new Promise((resolve) => setTimeout(resolve, 50));
           }
         }
       );
@@ -206,22 +198,19 @@ describe('MobileNav Performance Regression Tests', () => {
       render(<MobileNavTestWrapper onTabChange={onTabChange} />);
 
       const tabs = ['chat', 'shell', 'files', 'git'];
-      
-      const measurement = await performanceBenchmark.benchmark(
-        'tab-switching',
-        async () => {
-          for (const tab of tabs) {
-            const tabButton = screen.getByLabelText(tab);
-            
-            await act(async () => {
-              await userEvent.click(tabButton);
-            });
 
-            // Verify tab became active quickly
-            expect(onTabChange).toHaveBeenCalledWith(tab);
-          }
+      const measurement = await performanceBenchmark.benchmark('tab-switching', async () => {
+        for (const tab of tabs) {
+          const tabButton = screen.getByLabelText(tab);
+
+          await act(async () => {
+            await userEvent.click(tabButton);
+          });
+
+          // Verify tab became active quickly
+          expect(onTabChange).toHaveBeenCalledWith(tab);
         }
-      );
+      });
 
       // Tab switching should be very fast
       expect(measurement.average).toBeLessThan(200);
@@ -234,28 +223,25 @@ describe('MobileNav Performance Regression Tests', () => {
       const chatButton = screen.getByLabelText('chat');
       const shellButton = screen.getByLabelText('shell');
 
-      const measurement = await performanceBenchmark.benchmark(
-        'touch-interactions',
-        async () => {
-          // Simulate touch events
-          const touchStart = mobileNavUtils.mockTouchEvent('touchstart', [
-            { x: 100, y: 500, target: chatButton }
-          ]);
+      const measurement = await performanceBenchmark.benchmark('touch-interactions', async () => {
+        // Simulate touch events
+        const touchStart = mobileNavUtils.mockTouchEvent('touchstart', [
+          { x: 100, y: 500, target: chatButton }
+        ]);
 
-          await act(async () => {
-            fireEvent(chatButton, touchStart);
-          });
+        await act(async () => {
+          fireEvent(chatButton, touchStart);
+        });
 
-          // Simulate touch on different button
-          const touchStart2 = mobileNavUtils.mockTouchEvent('touchstart', [
-            { x: 200, y: 500, target: shellButton }
-          ]);
+        // Simulate touch on different button
+        const touchStart2 = mobileNavUtils.mockTouchEvent('touchstart', [
+          { x: 200, y: 500, target: shellButton }
+        ]);
 
-          await act(async () => {
-            fireEvent(shellButton, touchStart2);
-          });
-        }
-      );
+        await act(async () => {
+          fireEvent(shellButton, touchStart2);
+        });
+      });
 
       // Touch interactions should be very responsive
       expect(measurement.average).toBeLessThan(50);
@@ -281,38 +267,33 @@ describe('MobileNav Performance Regression Tests', () => {
 
   describe('Dynamic Tab Configuration', () => {
     it('should efficiently add/remove tasks tab based on settings', async () => {
-      const { rerender } = render(
-        <MobileNavTestWrapper tasksEnabled={false} />
-      );
+      const { rerender } = render(<MobileNavTestWrapper tasksEnabled={false} />);
 
       // Initially should not have tasks tab
       expect(screen.queryByLabelText('tasks')).not.toBeInTheDocument();
-      
+
       const standardTabs = screen.getAllByRole('button');
       expect(standardTabs).toHaveLength(4); // chat, shell, files, git
 
-      const measurement = await performanceBenchmark.benchmark(
-        'dynamic-tab-toggle',
-        async () => {
-          // Enable tasks
-          await act(async () => {
-            rerender(<MobileNavTestWrapper tasksEnabled={true} />);
-          });
+      const measurement = await performanceBenchmark.benchmark('dynamic-tab-toggle', async () => {
+        // Enable tasks
+        await act(async () => {
+          rerender(<MobileNavTestWrapper tasksEnabled={true} />);
+        });
 
-          await waitFor(() => {
-            expect(screen.getByLabelText('tasks')).toBeInTheDocument();
-          });
+        await waitFor(() => {
+          expect(screen.getByLabelText('tasks')).toBeInTheDocument();
+        });
 
-          // Disable tasks
-          await act(async () => {
-            rerender(<MobileNavTestWrapper tasksEnabled={false} />);
-          });
+        // Disable tasks
+        await act(async () => {
+          rerender(<MobileNavTestWrapper tasksEnabled={false} />);
+        });
 
-          await waitFor(() => {
-            expect(screen.queryByLabelText('tasks')).not.toBeInTheDocument();
-          });
-        }
-      );
+        await waitFor(() => {
+          expect(screen.queryByLabelText('tasks')).not.toBeInTheDocument();
+        });
+      });
 
       // Dynamic reconfiguration should be fast
       expect(measurement.average).toBeLessThan(100);
@@ -320,12 +301,7 @@ describe('MobileNav Performance Regression Tests', () => {
 
     it('should maintain performance with tasks tab enabled', async () => {
       const onTabChange = vi.fn();
-      render(
-        <MobileNavTestWrapper 
-          tasksEnabled={true} 
-          onTabChange={onTabChange} 
-        />
-      );
+      render(<MobileNavTestWrapper tasksEnabled={true} onTabChange={onTabChange} />);
 
       // Should have all 5 tabs including tasks
       const allTabs = screen.getAllByRole('button');
@@ -335,14 +311,11 @@ describe('MobileNav Performance Regression Tests', () => {
       expect(tasksButton).toBeInTheDocument();
 
       // Test navigation to tasks tab
-      const measurement = await performanceBenchmark.benchmark(
-        'tasks-tab-navigation',
-        async () => {
-          await act(async () => {
-            await userEvent.click(tasksButton);
-          });
-        }
-      );
+      const measurement = await performanceBenchmark.benchmark('tasks-tab-navigation', async () => {
+        await act(async () => {
+          await userEvent.click(tasksButton);
+        });
+      });
 
       expect(onTabChange).toHaveBeenCalledWith('tasks');
       expect(measurement.average).toBeLessThan(50);
@@ -351,9 +324,7 @@ describe('MobileNav Performance Regression Tests', () => {
 
   describe('Visual State Management', () => {
     it('should show active state indicators without flashing', async () => {
-      const { rerender } = render(
-        <MobileNavTestWrapper initialTab="chat" />
-      );
+      const { rerender } = render(<MobileNavTestWrapper initialTab='chat' />);
 
       const chatButton = screen.getByLabelText('chat');
       const shellButton = screen.getByLabelText('shell');
@@ -376,16 +347,16 @@ describe('MobileNav Performance Regression Tests', () => {
       });
 
       const styles = await flashPromise;
-      
+
       // Should not have visual flashing during state changes
       expect(flashDetector.hasFlash(styles)).toBe(false);
     });
 
     it('should show active tab indicators correctly', async () => {
-      render(<MobileNavTestWrapper initialTab="files" />);
+      render(<MobileNavTestWrapper initialTab='files' />);
 
       const filesButton = screen.getByLabelText('files');
-      
+
       // Should have active indicator (blue dot)
       const indicator = filesButton.querySelector('.absolute.top-0');
       expect(indicator).toBeInTheDocument();
@@ -402,41 +373,36 @@ describe('MobileNav Performance Regression Tests', () => {
     it('should handle viewport changes efficiently', async () => {
       const { container } = render(<MobileNavTestWrapper />);
 
-      const measurement = await performanceBenchmark.benchmark(
-        'viewport-resize',
-        async () => {
-          // Simulate device rotation
-          act(() => {
-            Object.defineProperty(window, 'innerWidth', { value: 667 });
-            Object.defineProperty(window, 'innerHeight', { value: 375 });
-            window.dispatchEvent(new Event('resize'));
-          });
+      const measurement = await performanceBenchmark.benchmark('viewport-resize', async () => {
+        // Simulate device rotation
+        act(() => {
+          Object.defineProperty(window, 'innerWidth', { value: 667 });
+          Object.defineProperty(window, 'innerHeight', { value: 375 });
+          window.dispatchEvent(new Event('resize'));
+        });
 
-          await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
-          // Rotate back
-          act(() => {
-            Object.defineProperty(window, 'innerWidth', { value: 375 });
-            Object.defineProperty(window, 'innerHeight', { value: 667 });
-            window.dispatchEvent(new Event('resize'));
-          });
+        // Rotate back
+        act(() => {
+          Object.defineProperty(window, 'innerWidth', { value: 375 });
+          Object.defineProperty(window, 'innerHeight', { value: 667 });
+          window.dispatchEvent(new Event('resize'));
+        });
 
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-      );
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      });
 
       // Should handle orientation changes quickly
       expect(measurement.average).toBeLessThan(300);
     });
 
     it('should maintain accessibility during transitions', async () => {
-      const { rerender } = render(
-        <MobileNavTestWrapper isInputFocused={false} />
-      );
+      const { rerender } = render(<MobileNavTestWrapper isInputFocused={false} />);
 
       // All buttons should be accessible
       const buttons = screen.getAllByRole('button');
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         expect(button).toHaveAttribute('aria-label');
         expect(button).toHaveClass('touch-manipulation'); // iOS optimization
       });
@@ -447,7 +413,7 @@ describe('MobileNav Performance Regression Tests', () => {
       // Buttons should still be accessible even when visually hidden
       await waitFor(() => {
         const hiddenButtons = screen.getAllByRole('button');
-        hiddenButtons.forEach(button => {
+        hiddenButtons.forEach((button) => {
           expect(button).toHaveAttribute('aria-label');
         });
       });
@@ -456,9 +422,7 @@ describe('MobileNav Performance Regression Tests', () => {
 
   describe('CSS Class Management', () => {
     it('should apply correct CSS classes for different states', async () => {
-      const { rerender } = render(
-        <MobileNavTestWrapper isInputFocused={false} />
-      );
+      const { rerender } = render(<MobileNavTestWrapper isInputFocused={false} />);
 
       const navContainer = screen.getByTestId('mobile-nav-container');
       const navElement = navContainer.querySelector('[class*="fixed bottom-0"]');
