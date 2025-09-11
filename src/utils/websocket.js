@@ -10,7 +10,11 @@ export function useWebSocket() {
   const wsRef = useRef(null); // Store WebSocket instance for proper cleanup
 
   useEffect(() => {
-    connect();
+    // Check if we have an auth token before attempting connection
+    const token = safeLocalStorage.getItem('auth-token');
+    if (token) {
+      connect();
+    }
 
     return () => {
       // Clear reconnection timeout
@@ -137,6 +141,7 @@ export function useWebSocket() {
     ws,
     sendMessage,
     messages,
-    isConnected
+    isConnected,
+    connect // Expose connect method for manual reconnection
   };
 }
