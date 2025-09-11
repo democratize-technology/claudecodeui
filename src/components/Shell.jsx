@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Terminal from '@xterm/xterm';
-import FitAddon from '@xterm/addon-fit';
-import ClipboardAddon from '@xterm/addon-clipboard';
-import WebglAddon from '@xterm/addon-webgl';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { ClipboardAddon } from '@xterm/addon-clipboard';
+import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
 import { api } from '../utils/api';
 

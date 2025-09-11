@@ -76,7 +76,16 @@ export default defineConfig(({ command, mode }) => {
     },
     // Optimize dependencies
     optimizeDeps: {
-      include: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+      include: [
+        'react',
+        'react-dom',
+        'react-router-dom',
+        'lucide-react',
+        '@xterm/xterm',
+        '@xterm/addon-fit',
+        '@xterm/addon-clipboard',
+        '@xterm/addon-webgl'
+      ],
       exclude: [
         // Large dependencies that should be chunked
         '@codemirror/lang-css',
@@ -84,9 +93,7 @@ export default defineConfig(({ command, mode }) => {
         '@codemirror/lang-javascript',
         '@codemirror/lang-json',
         '@codemirror/lang-markdown',
-        '@codemirror/lang-python',
-        '@xterm/xterm',
-        '@xterm/addon-webgl'
+        '@codemirror/lang-python'
       ]
     }
   };
