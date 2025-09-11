@@ -31,6 +31,8 @@ import safeLocalStorage from '../utils/safeLocalStorage';
 import { MicButton } from './MicButton.jsx';
 import { api, authenticatedFetch } from '../utils/api';
 import { useMultipleLoadingStates } from '../utils/hooks/useLoadingState';
+import { useErrorHandler } from '../utils/hooks/useErrorHandler.jsx';
+import { ERROR_CATEGORIES, ERROR_SEVERITY } from '../utils/errorHandling.jsx';
 
 // Format "Claude AI usage limit reached|<epoch>" into a local time string
 function formatUsageLimitText(text) {
@@ -88,87 +90,6 @@ function formatUsageLimitText(text) {
   }
 }
 
-// Chat-specific localStorage manager with quota handling and message truncation
-const chatStorageManager = {
-  setItem: (key, value) => {
-    try {
-      // For chat messages, implement compression and size limits
-      if (key.startsWith('chat_messages_') && typeof value === 'string') {
-        try {
-          const parsed = JSON.parse(value);
-          // Limit to last 50 messages to prevent storage bloat
-          if (Array.isArray(parsed) && parsed.length > 50) {
-            console.warn(`Truncating chat history for ${key} from ${parsed.length} to 50 messages`);
-            const truncated = parsed.slice(-50);
-            value = JSON.stringify(truncated);
-          }
-        } catch (parseError) {
-          console.warn('Could not parse chat messages for truncation:', parseError);
-        }
-      }
-
-      localStorage.setItem(key, value);
-    } catch (error) {
-      if (error.name === 'QuotaExceededError') {
-        console.warn('localStorage quota exceeded, clearing old data');
-        // Clear old chat messages to free up space
-        const keys = Object.keys(localStorage);
-        const chatKeys = keys.filter((k) => k.startsWith('chat_messages_')).sort();
-
-        // Remove oldest chat data first, keeping only the 3 most recent projects
-        if (chatKeys.length > 3) {
-          chatKeys.slice(0, chatKeys.length - 3).forEach((k) => {
-            localStorage.removeItem(k);
-            console.log(`Removed old chat data: ${k}`);
-          });
-        }
-
-        // If still failing, clear draft inputs too
-        const draftKeys = keys.filter((k) => k.startsWith('draft_input_'));
-        draftKeys.forEach((k) => {
-          localStorage.removeItem(k);
-        });
-
-        // Try again with reduced data
-        try {
-          localStorage.setItem(key, value);
-        } catch (retryError) {
-          console.error('Failed to save to localStorage even after cleanup:', retryError);
-          // Last resort: Try to save just the last 10 messages
-          if (key.startsWith('chat_messages_') && typeof value === 'string') {
-            try {
-              const parsed = JSON.parse(value);
-              if (Array.isArray(parsed) && parsed.length > 10) {
-                const minimal = parsed.slice(-10);
-                localStorage.setItem(key, JSON.stringify(minimal));
-                console.warn('Saved only last 10 messages due to quota constraints');
-              }
-            } catch (finalError) {
-              console.error('Final save attempt failed:', finalError);
-            }
-          }
-        }
-      } else {
-        console.error('localStorage error:', error);
-      }
-    }
-  },
-  getItem: (key) => {
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      console.error('localStorage getItem error:', error);
-      return null;
-    }
-  },
-  removeItem: (key) => {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.error('localStorage removeItem error:', error);
-    }
-  }
-};
 
 // Memoized message component to prevent unnecessary re-renders
 const MessageComponent = memo(
@@ -1461,13 +1382,13 @@ function ChatInterface({
   const { tasksEnabled } = useTasksSettings();
   const [input, setInput] = useState(() => {
     if (typeof window !== 'undefined' && selectedProject) {
-      return chatStorageManager.getItem(`draft_input_${selectedProject.name}`) || '';
+      return safeLocalStorage.getItem(`draft_input_${selectedProject.name}`) || '';
     }
     return '';
   });
   const [chatMessages, setChatMessages] = useState(() => {
     if (typeof window !== 'undefined' && selectedProject) {
-      const saved = chatStorageManager.getItem(`chat_messages_${selectedProject.name}`);
+      const saved = safeLocalStorage.getItem(`chat_messages_${selectedProject.name}`);
       return saved ? JSON.parse(saved) : [];
     }
     return [];
@@ -1478,6 +1399,160 @@ function ChatInterface({
     moreMessagesLoading: isLoadingMoreMessages,
     executeNamedAsync
   } = useMultipleLoadingStates(['loading', 'sessionMessages', 'moreMessages']);
+
+  // Initialize error handler for storage operations and user feedback
+  const storageErrorHandler = useErrorHandler({
+    defaultCategory: ERROR_CATEGORIES.STORAGE,
+    defaultSeverity: ERROR_SEVERITY.MEDIUM,
+    showToast: true, // Enable user notifications for storage errors
+    autoReset: true,
+    resetDelay: 5000,
+    onError: (processedError) => {
+      // Additional user feedback for critical storage errors
+      if (processedError.severity === ERROR_SEVERITY.HIGH) {
+        console.warn('Critical storage error - user may lose chat history:', processedError.userMessage);
+      }
+    }
+  });
+
+  // Enhanced storage manager with proper error handling and user feedback
+  const enhancedStorageManager = useMemo(() => ({
+    setItem: (key, value) => {
+      try {
+        // For chat messages, implement compression and size limits
+        if (key.startsWith('chat_messages_') && typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value);
+            // Limit to last 50 messages to prevent storage bloat
+            if (Array.isArray(parsed) && parsed.length > 50) {
+              storageErrorHandler.reportError(
+                new Error(`Truncating chat history from ${parsed.length} to 50 messages`),
+                ERROR_CATEGORIES.STORAGE,
+                ERROR_SEVERITY.LOW,
+                { operation: 'chat_truncation', key, messageCount: parsed.length }
+              );
+              const truncated = parsed.slice(-50);
+              value = JSON.stringify(truncated);
+            }
+          } catch (parseError) {
+            storageErrorHandler.reportError(
+              parseError,
+              ERROR_CATEGORIES.STORAGE,
+              ERROR_SEVERITY.MEDIUM,
+              { operation: 'chat_parse', key }
+            );
+          }
+        }
+
+        localStorage.setItem(key, value);
+      } catch (error) {
+        if (error.name === 'QuotaExceededError') {
+          // User-visible error for quota exceeded
+          storageErrorHandler.reportError(
+            new Error('Storage quota exceeded. Clearing old data to preserve chat history.'),
+            ERROR_CATEGORIES.STORAGE,
+            ERROR_SEVERITY.HIGH,
+            { operation: 'quota_exceeded', key }
+          );
+
+          // Clear old chat messages to free up space
+          const keys = Object.keys(localStorage);
+          const chatKeys = keys.filter((k) => k.startsWith('chat_messages_')).sort();
+
+          if (chatKeys.length > 3) {
+            chatKeys.slice(0, chatKeys.length - 3).forEach((k) => {
+              localStorage.removeItem(k);
+            });
+          }
+
+          // Clear draft inputs as lower priority data
+          const draftKeys = keys.filter((k) => k.startsWith('draft_input_'));
+          draftKeys.forEach((k) => {
+            localStorage.removeItem(k);
+          });
+
+          // Try again with reduced data
+          try {
+            localStorage.setItem(key, value);
+            storageErrorHandler.reportError(
+              new Error('Successfully saved chat data after cleanup'),
+              ERROR_CATEGORIES.STORAGE,
+              ERROR_SEVERITY.LOW,
+              { operation: 'quota_recovery', key }
+            );
+          } catch (retryError) {
+            // Critical error - user will lose data
+            storageErrorHandler.reportError(
+              new Error('Failed to save chat history. You may lose recent messages.'),
+              ERROR_CATEGORIES.STORAGE,
+              ERROR_SEVERITY.HIGH,
+              { operation: 'quota_critical_failure', key, error: retryError.message }
+            );
+
+            // Last resort: Try to save just the last 10 messages
+            if (key.startsWith('chat_messages_') && typeof value === 'string') {
+              try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed) && parsed.length > 10) {
+                  const minimal = parsed.slice(-10);
+                  localStorage.setItem(key, JSON.stringify(minimal));
+                  storageErrorHandler.reportError(
+                    new Error('Saved only last 10 messages due to storage constraints'),
+                    ERROR_CATEGORIES.STORAGE,
+                    ERROR_SEVERITY.MEDIUM,
+                    { operation: 'minimal_save', key, messageCount: 10 }
+                  );
+                }
+              } catch (minimalError) {
+                // Complete failure - user feedback critical
+                storageErrorHandler.reportError(
+                  new Error('Unable to save chat history. Consider clearing browser storage.'),
+                  ERROR_CATEGORIES.STORAGE,
+                  ERROR_SEVERITY.HIGH,
+                  { operation: 'complete_failure', key }
+                );
+              }
+            }
+          }
+        } else {
+          // Other storage errors
+          storageErrorHandler.reportError(
+            error,
+            ERROR_CATEGORIES.STORAGE,
+            ERROR_SEVERITY.MEDIUM,
+            { operation: 'storage_general', key }
+          );
+        }
+      }
+    },
+    
+    getItem: (key) => {
+      try {
+        return localStorage.getItem(key);
+      } catch (error) {
+        storageErrorHandler.reportError(
+          error,
+          ERROR_CATEGORIES.STORAGE,
+          ERROR_SEVERITY.LOW,
+          { operation: 'storage_read', key }
+        );
+        return null;
+      }
+    },
+    
+    removeItem: (key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (error) {
+        storageErrorHandler.reportError(
+          error,
+          ERROR_CATEGORIES.STORAGE,
+          ERROR_SEVERITY.LOW,
+          { operation: 'storage_remove', key }
+        );
+      }
+    }
+  }), [storageErrorHandler]);
 
   const [currentSessionId, setCurrentSessionId] = useState(selectedSession?.id || null);
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -2262,16 +2337,16 @@ function ChatInterface({
   // Persist input draft to localStorage
   useEffect(() => {
     if (selectedProject && input !== '') {
-      chatStorageManager.setItem(`draft_input_${selectedProject.name}`, input);
+      enhancedStorageManager.setItem(`draft_input_${selectedProject.name}`, input);
     } else if (selectedProject && input === '') {
-      chatStorageManager.removeItem(`draft_input_${selectedProject.name}`);
+      enhancedStorageManager.removeItem(`draft_input_${selectedProject.name}`);
     }
   }, [input, selectedProject]);
 
   // Persist chat messages to localStorage
   useEffect(() => {
     if (selectedProject && chatMessages.length > 0) {
-      chatStorageManager.setItem(`chat_messages_${selectedProject.name}`,
+      enhancedStorageManager.setItem(`chat_messages_${selectedProject.name}`,
         JSON.stringify(chatMessages)
       );
     }
@@ -2281,7 +2356,7 @@ function ChatInterface({
   useEffect(() => {
     if (selectedProject) {
       // Always load saved input draft for the project
-      const savedInput = chatStorageManager.getItem(`draft_input_${selectedProject.name}`) || '';
+      const savedInput = enhancedStorageManager.getItem(`draft_input_${selectedProject.name}`) || '';
       if (savedInput !== input) {
         setInput(savedInput);
       }
@@ -2761,7 +2836,7 @@ function ChatInterface({
 
           // Clear persisted chat messages after successful completion
           if (selectedProject && latestMessage.exitCode === 0) {
-            chatStorageManager.removeItem(`chat_messages_${selectedProject.name}`);
+            enhancedStorageManager.removeItem(`chat_messages_${selectedProject.name}`);
           }
           break;
 
@@ -3258,7 +3333,7 @@ function ChatInterface({
 
     // Clear the saved draft since message was sent
     if (selectedProject) {
-      chatStorageManager.removeItem(`draft_input_${selectedProject.name}`);
+      enhancedStorageManager.removeItem(`draft_input_${selectedProject.name}`);
     }
   };
 
