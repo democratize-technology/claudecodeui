@@ -35,7 +35,8 @@ const loginLimiter = rateLimit({
   // Custom key generator to track by IP + username combination for more targeted limiting
   // SECURITY: Use ipKeyGenerator to prevent IPv6 address representation bypass attacks
   keyGenerator: (req) => {
-    return `${ipKeyGenerator(req)}-${req.body?.username || 'unknown'}`;
+    const normalizedIP = ipKeyGenerator(req);
+    return `${normalizedIP}-${req.body?.username || 'unknown'}`;
   }
 });
 
