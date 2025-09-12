@@ -974,7 +974,7 @@ function Sidebar({
                                     ? `${sessionCount}+`
                                     : sessionCount;
                                 })()}
-                                {project.fullPath !== project.displayName && (
+                                {project.fullPath && project.fullPath !== project.displayName && (
                                   <span className='ml-1 opacity-60' title={project.fullPath}>
                                     •{' '}
                                     {project.fullPath.length > 25
