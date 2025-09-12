@@ -80,9 +80,9 @@ export function useWebSocket() {
         wsBaseUrl = `${protocol}//${window.location.hostname}:${apiPort}`;
       }
 
-      // Create WebSocket with token in subprotocol for security (no URL exposure)
-      const wsUrl = `${wsBaseUrl}/ws`;
-      const websocket = new WebSocket(wsUrl, ['authorization', `Bearer ${token}`]);
+      // Create WebSocket with token in query parameter (secure over HTTPS)
+      const wsUrl = `${wsBaseUrl}/ws?token=${encodeURIComponent(token)}`;
+      const websocket = new WebSocket(wsUrl);
 
       // Store WebSocket instance in ref for proper cleanup
       wsRef.current = websocket;
