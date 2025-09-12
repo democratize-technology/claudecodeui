@@ -1,11 +1,15 @@
+// Load environment variables first
+import { ensureEnvLoaded } from '../env.js';
+ensureEnvLoaded();
+
 import jwt from 'jsonwebtoken';
 import { userDb } from '../database/db.js';
 
 // Require JWT secret from environment - no fallback for security
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is required for security');
+if (!process.env.JWT_ACCESS_SECRET) {
+  throw new Error('JWT_ACCESS_SECRET environment variable is required for security');
 }
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 
 // Optional API key middleware
 const validateApiKey = (req, res, next) => {
@@ -31,7 +35,7 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
 
     // Verify user still exists and is active
     const user = userDb.getUserById(decoded.userId);
@@ -54,7 +58,7 @@ const generateToken = (user) => {
       userId: user.id,
       username: user.username
     },
-    JWT_SECRET,
+    JWT_ACCESS_SECRET,
     { expiresIn: '24h' }
   );
 };
@@ -66,7 +70,7 @@ const authenticateWebSocket = (token) => {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
     return decoded;
   } catch (error) {
     console.error('WebSocket token verification error:', error);
@@ -74,4 +78,10 @@ const authenticateWebSocket = (token) => {
   }
 };
 
-export { validateApiKey, authenticateToken, generateToken, authenticateWebSocket, JWT_SECRET };
+export {
+  validateApiKey,
+  authenticateToken,
+  generateToken,
+  authenticateWebSocket,
+  JWT_ACCESS_SECRET
+};

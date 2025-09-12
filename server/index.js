@@ -1,44 +1,13 @@
-// Load environment variables from .env file
-import dotenv from 'dotenv';
-import path from 'path';
+// Load environment variables from .env file first
+import { ensureEnvLoaded } from './env.js';
+ensureEnvLoaded();
+
+import express from 'express';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Load environment variables
-const envResult = dotenv.config({
-  path: path.join(__dirname, '../.env'),
-  override: false, // Preserve existing environment variables
-  debug: process.env.DOTENV_DEBUG === 'true'
-});
-
-// Handle dotenv loading errors
-if (envResult.error) {
-  console.error('Environment file loading failed:', envResult.error.message);
-  // For production, fail fast if .env is required
-  if (process.env.NODE_ENV === 'production') {
-    console.error('Critical: Environment file is required in production');
-    process.exit(1);
-  }
-}
-
-// Validate required environment variables
-const requiredEnvVars = ['PORT'];
-const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
-if (missingVars.length > 0) {
-  console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
-  console.error('Please check your .env file or system environment variables');
-  process.exit(1);
-}
-
-// Log configuration in development only
-if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV !== 'production') {
-  console.log('PORT from env:', process.env.PORT);
-}
-
-import express from 'express';
 import { WebSocketServer } from 'ws';
 import http from 'http';
 import cors from 'cors';
@@ -84,7 +53,7 @@ const connectedClients = new Set();
 // Setup file system watcher for Claude projects folder using chokidar
 async function setupProjectsWatcher() {
   const chokidar = (await import('chokidar')).default;
-  const claudeProjectsPath = path.join(process.env.HOME, '.claude', 'projects');
+  const claudeProjectsPath = join(process.env.HOME, '.claude', 'projects');
 
   if (projectsWatcher) {
     projectsWatcher.close();
@@ -1050,7 +1019,7 @@ app.post('/api/projects/:projectName/upload-images', authenticateToken, async (r
     // Configure multer for image uploads
     const storage = multer.diskStorage({
       destination: async (req, file, cb) => {
-        const uploadDir = path.join(os.tmpdir(), 'claude-ui-uploads', String(req.user.id));
+        const uploadDir = join(os.tmpdir(), 'claude-ui-uploads', String(req.user.id));
         await fs.mkdir(uploadDir, { recursive: true });
         cb(null, uploadDir);
       },
@@ -1125,12 +1094,12 @@ app.post('/api/projects/:projectName/upload-images', authenticateToken, async (r
 });
 
 // Static files served after API routes to avoid intercepting API requests
-app.use(express.static(path.join(__dirname, '../dist')));
+app.use(express.static(join(__dirname, '../dist')));
 
 // Serve React app for all other routes
 app.get('*', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    res.sendFile(path.join(__dirname, '../dist/index.html'));
+    res.sendFile(join(__dirname, '../dist/index.html'));
   } else {
     // In development, redirect to Vite dev server
     res.redirect(`http://localhost:${process.env.VITE_PORT || 3001}`);
@@ -1159,7 +1128,7 @@ async function getFileTree(dirPath, maxDepth = 3, currentDepth = 0, showHidden =
       if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build')
         continue;
 
-      const itemPath = path.join(dirPath, entry.name);
+      const itemPath = join(dirPath, entry.name);
       const item = {
         name: entry.name,
         path: itemPath,
