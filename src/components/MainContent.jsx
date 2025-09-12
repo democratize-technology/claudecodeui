@@ -257,7 +257,9 @@ function MainContent({
           <div className='flex items-center space-x-2 sm:space-x-3'>
             {isMobile && (
               <button
-                onClick={onMenuClick}
+                onClick={(e) => {
+                  onMenuClick();
+                }}
                 onTouchStart={(e) => {
                   e.preventDefault();
                   onMenuClick();

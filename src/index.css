@@ -575,7 +575,7 @@
       background-color: inherit !important;
       color: inherit !important;
       opacity: inherit !important;
-      transform: inherit !important;
+      /* Don't override transform on hover, let active states work */
     }
     
     /* Force buttons to be immediately clickable */
@@ -588,6 +588,12 @@
     .active\:scale-\[0\.98\]:active,
     .active\:scale-95:active {
       transform: scale(0.98) !important;
+    }
+    
+    /* Ensure touch feedback works for hamburger menu */
+    button:active,
+    [role="button"]:active {
+      transform: scale(0.95) !important;
     }
   }
   

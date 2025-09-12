@@ -102,6 +102,11 @@ function AppContent() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Debug sidebarOpen state changes
+  useEffect(() => {
+    console.log('🍔 sidebarOpen state changed to:', sidebarOpen);
+  }, [sidebarOpen]);
+
   useEffect(() => {
     // Fetch projects on component mount
     fetchProjects();
@@ -682,7 +687,12 @@ function AppContent() {
           sendMessage={sendMessage}
           messages={messages}
           isMobile={isMobile}
-          onMenuClick={() => setSidebarOpen(true)}
+          onMenuClick={() => {
+            console.log('🍔 onMenuClick called, setting sidebarOpen to true');
+            console.log('🍔 Previous sidebarOpen state:', sidebarOpen);
+            setSidebarOpen(true);
+            console.log('🍔 setSidebarOpen(true) called');
+          }}
           isLoading={isLoadingProjects}
           onInputFocusChange={setIsInputFocused}
           onSessionActive={markSessionAsActive}

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Hamburger Menu Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, sans-serif; }
+        
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .hamburger-btn {
+            padding: 10px;
+            background: none;
+            border: none;
+            color: #6b7280;
+            border-radius: 6px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        
+        .hamburger-btn:hover {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .hamburger-btn:active {
+            transform: scale(0.95);
+            background-color: #e5e7eb;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 85vw;
+            max-width: 320px;
+            height: 100vh;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            transform: translateX(-100%);
+            transition: transform 150ms ease-out;
+            z-index: 50;
+        }
+        
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 150ms ease-out;
+            z-index: 40;
+        }
+        
+        .overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .content {
+            padding: 20px;
+            text-align: center;
+            color: #374151;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        /* Touch device specific styles */
+        @media (hover: none) and (pointer: coarse) {
+            .hamburger-btn:hover {
+                background-color: inherit;
+                color: inherit;
+            }
+            
+            .hamburger-btn:active {
+                transform: scale(0.95) !important;
+                background-color: #e5e7eb !important;
+            }
+            
+            * {
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay" id="overlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="content">
+            <h2>Mobile Sidebar</h2>
+            <p>This sidebar should appear when hamburger menu is tapped</p>
+            <button onclick="closeSidebar()">Close</button>
+        </div>
+    </div>
+    
+    <div class="header">
+        <button 
+            class="hamburger-btn" 
+            id="hamburger"
+            onclick="handleClick()"
+            ontouchstart="handleTouchStart(event)"
+        >
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+        <h1>Mobile Hamburger Test</h1>
+    </div>
+    
+    <div class="content">
+        <h2>Test Mobile Hamburger Menu</h2>
+        <p>Open this page on mobile or use Chrome DevTools mobile simulation.</p>
+        <p>Tap the hamburger menu (☰) to test if the sidebar opens.</p>
+        
+        <div class="status" id="status">
+            Status: Waiting for interaction...
+        </div>
+    </div>
+
+    <script>
+        let sidebarOpen = false;
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const status = document.getElementById('status');
+        
+        function updateStatus(message) {
+            status.textContent = 'Status: ' + message;
+            console.log('🍔', message);
+        }
+        
+        function openSidebar() {
+            updateStatus('Opening sidebar...');
+            sidebarOpen = true;
+            sidebar.classList.add('open');
+            overlay.classList.add('open');
+            updateStatus('Sidebar opened successfully!');
+        }
+        
+        function closeSidebar() {
+            updateStatus('Closing sidebar...');
+            sidebarOpen = false;
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+            updateStatus('Sidebar closed successfully!');
+        }
+        
+        function handleClick() {
+            updateStatus('onClick event fired');
+            if (sidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+        
+        function handleTouchStart(e) {
+            updateStatus('onTouchStart event fired');
+            e.preventDefault();
+            updateStatus('preventDefault() called');
+            if (sidebarOpen) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }
+        
+        // Close sidebar when clicking overlay
+        overlay.addEventListener('click', closeSidebar);
+        overlay.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            closeSidebar();
+        });
+        
+        // Initial status
+        updateStatus('Ready for testing');
+    </script>
+</body>
+</html>
