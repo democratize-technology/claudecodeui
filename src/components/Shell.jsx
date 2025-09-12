@@ -425,8 +425,7 @@ function Shell({
       // Fetch server configuration to get the correct WebSocket URL
       let wsBaseUrl;
       try {
-        const configResponse = await api.config();
-        const config = await configResponse.json();
+        const config = await api.config();
         wsBaseUrl = config.wsUrl;
 
         // If the config returns localhost but we're not on localhost, use current host but with API server port

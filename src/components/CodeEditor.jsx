@@ -149,13 +149,7 @@ function CodeEditor({ file, onClose, projectPath }) {
       try {
         await executeNamedAsync(
           async () => {
-            const response = await api.readFile(file.projectName, file.path);
-
-            if (!response.ok) {
-              throw new Error(`Failed to load file: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            const data = await api.readFile(file.projectName, file.path);
             setContent(data.content);
           },
           'loading',
@@ -191,14 +185,7 @@ function CodeEditor({ file, onClose, projectPath }) {
     try {
       await executeNamedAsync(
         async () => {
-          const response = await api.saveFile(file.projectName, file.path, content);
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `Save failed: ${response.status}`);
-          }
-
-          const result = await response.json();
+          await api.saveFile(file.projectName, file.path, content);
 
           // Show success feedback
           setSaveSuccess(true);

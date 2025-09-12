@@ -223,8 +223,7 @@ function AppContent() {
   const fetchProjects = async () => {
     await projectErrorHandler.executeAsync(async () => {
       await executeProjectsAsync(async () => {
-        const response = await api.projects();
-        const data = await response.json();
+        const data = await api.projects();
 
         // Always fetch Cursor sessions for each project so we can combine views
         for (const project of data) {
@@ -401,8 +400,7 @@ function AppContent() {
   const handleSidebarRefresh = async () => {
     // Refresh only the sessions for all projects, don't change selected state
     try {
-      const response = await api.projects();
-      const freshProjects = await response.json();
+      const freshProjects = await api.projects();
 
       // Optimize to preserve object references and minimize re-renders
       setProjects((prevProjects) => {
