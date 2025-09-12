@@ -127,4 +127,11 @@ dev-debug.log
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
+
+# Test artifacts
+tests/e2e/screenshots/
+*.png
+*.jpg
+*.jpeg
+test-results/ 
