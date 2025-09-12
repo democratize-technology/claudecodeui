@@ -86,6 +86,11 @@ export const AuthProvider = ({ children }) => {
             throw new Error(`Token verification failed: ${userResponse.status}`);
           }
 
+          // Additional safety check for response type
+          if (!userResponse.json || typeof userResponse.json !== 'function') {
+            throw new Error('Invalid response from auth endpoint');
+          }
+
           const userData = await userResponse.json();
           setUser(userData.user);
           setNeedsSetup(false);
