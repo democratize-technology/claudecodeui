@@ -132,6 +132,10 @@ async function setupProjectsWatcher() {
 const app = express();
 const server = http.createServer(app);
 
+// SECURITY: Trust first proxy (K8s load balancer) for X-Forwarded-For headers
+// This is essential for accurate IP-based rate limiting and security logging
+app.set('trust proxy', 1);
+
 // Single WebSocket server that handles both paths
 const wss = new WebSocketServer({
   server,
