@@ -7,6 +7,21 @@ import prettierPlugin from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
+  // Global ignores (must be first)
+  {
+    ignores: [
+      'dist/**/*',
+      'build/**/*',
+      'coverage/**/*',
+      'node_modules/**/*',
+      '*.min.js',
+      '**/*.min.js',
+      'public/sw.js',
+      'public/generate-icons.js',
+      'jest.config.*.cjs'
+    ]
+  },
+
   // Base ESLint recommended rules
   js.configs.recommended,
 
@@ -209,6 +224,36 @@ export default [
     rules: {
       'no-unused-expressions': 'off',
       'no-console': 'off' // Allow console in tests
+    }
+  },
+
+  // E2E test files configuration
+  {
+    files: ['tests/e2e/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: {
+        // Puppeteer/Jest globals
+        page: 'readonly',
+        browser: 'readonly',
+        jestPuppeteer: 'readonly',
+        // Custom test helpers
+        navigateToApp: 'readonly',
+        authHelper: 'readonly',
+        takeScreenshot: 'readonly',
+        // Jest globals (already defined but repeated for clarity in E2E context)
+        describe: 'readonly',
+        test: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly'
+      }
+    },
+    rules: {
+      'no-console': 'off',
+      'no-undef': 'error' // Keep undef checking but with proper globals
     }
   },
 
