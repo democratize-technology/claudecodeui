@@ -1,6 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { userDb, db } from '../database/db.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 
@@ -33,8 +33,9 @@ const loginLimiter = rateLimit({
   // Only count failed requests towards the limit
   skipSuccessfulRequests: true,
   // Custom key generator to track by IP + username combination for more targeted limiting
+  // SECURITY: Use ipKeyGenerator to prevent IPv6 address representation bypass attacks
   keyGenerator: (req) => {
-    return `${req.ip}-${req.body?.username || 'unknown'}`;
+    return `${ipKeyGenerator(req)}-${req.body?.username || 'unknown'}`;
   }
 });
 

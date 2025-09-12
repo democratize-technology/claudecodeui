@@ -4,14 +4,14 @@ ensureEnvLoaded();
 
 import express from 'express';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, relative } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { WebSocketServer } from 'ws';
 import http from 'http';
 import cors from 'cors';
-import { promises as fsPromises } from 'fs';
+import fs, { promises as fsPromises } from 'fs';
 import { spawn } from 'child_process';
 import os from 'os';
 import pty from 'node-pty';
@@ -99,7 +99,7 @@ async function setupProjectsWatcher() {
             projects: updatedProjects,
             timestamp: new Date().toISOString(),
             changeType: eventType,
-            changedFile: path.relative(claudeProjectsPath, filePath)
+            changedFile: relative(claudeProjectsPath, filePath)
           });
 
           connectedClients.forEach((client) => {
