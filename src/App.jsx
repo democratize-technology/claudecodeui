@@ -218,7 +218,7 @@ function AppContent() {
         }
       }
     }
-  }, [messages, selectedProject, selectedSession, activeSessions]);
+  }, [messages?.length, activeSessions.size]); // Fixed: Remove selectedProject and selectedSession from dependencies to prevent infinite loop
 
   const fetchProjects = async () => {
     await projectErrorHandler.executeAsync(async () => {
@@ -289,8 +289,18 @@ function AppContent() {
     });
   };
 
-  // Expose fetchProjects globally for component access
-  window.refreshProjects = fetchProjects;
+  // Expose fetchProjects globally for component access with debouncing
+  // Prevent rapid successive calls that can cause infinite loops
+  let refreshProjectsTimeout = null;
+  window.refreshProjects = (...args) => {
+    if (refreshProjectsTimeout) {
+      clearTimeout(refreshProjectsTimeout);
+    }
+    refreshProjectsTimeout = setTimeout(() => {
+      fetchProjects(...args);
+      refreshProjectsTimeout = null;
+    }, 1000); // 1 second debounce - prevents multiple calls within 1 second
+  };
 
   // Handle URL-based session loading
   useEffect(() => {

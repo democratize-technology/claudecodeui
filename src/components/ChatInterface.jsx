@@ -2829,10 +2829,11 @@ function ChatInterface({
             setCurrentSessionId(cursorSessionId);
             setCachedPendingSessionId(null);
 
-            // Trigger a project refresh to update the sidebar with the new session
-            if (window.refreshProjects) {
-              setTimeout(() => window.refreshProjects(), 500);
-            }
+            // TEMPORARILY DISABLED - Trigger a project refresh to update the sidebar with the new session
+            // This setTimeout was causing infinite loops - the WebSocket 'projects_updated' message should handle refreshes
+            // if (window.refreshProjects) {
+            //   setTimeout(() => window.refreshProjects(), 500);
+            // }
           }
           break;
 
@@ -2903,10 +2904,11 @@ function ChatInterface({
             setCurrentSessionId(pendingSessionId);
             setCachedPendingSessionId(null);
 
-            // Trigger a project refresh to update the sidebar with the new session
-            if (window.refreshProjects) {
-              setTimeout(() => window.refreshProjects(), 500);
-            }
+            // TEMPORARILY DISABLED - Trigger a project refresh to update the sidebar with the new session
+            // This setTimeout was causing infinite loops - the WebSocket 'projects_updated' message should handle refreshes
+            // if (window.refreshProjects) {
+            //   setTimeout(() => window.refreshProjects(), 500);
+            // }
           }
 
           // Clear persisted chat messages after successful completion

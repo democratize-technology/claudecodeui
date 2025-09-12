@@ -119,13 +119,17 @@ export const TaskMasterProvider = ({ children }) => {
           setProjects(enrichedProjects);
 
           // If current project is set, update its TaskMaster data
-          if (currentProject) {
-            const updatedCurrent = enrichedProjects.find((p) => p.name === currentProject.name);
-            if (updatedCurrent) {
-              setCurrentProjectState(updatedCurrent);
-              setProjectTaskMaster(updatedCurrent.taskmaster);
+          // Access currentProject from state instead of depending on it
+          setCurrentProjectState((prev) => {
+            if (prev) {
+              const updatedCurrent = enrichedProjects.find((p) => p.name === prev.name);
+              if (updatedCurrent) {
+                setProjectTaskMaster(updatedCurrent.taskmaster);
+                return updatedCurrent;
+              }
             }
-          }
+            return prev;
+          });
         },
         'projects',
         'refresh-projects'
@@ -133,7 +137,7 @@ export const TaskMasterProvider = ({ children }) => {
     } catch (err) {
       handleError(err, 'load projects');
     }
-  }, [user, token, executeNamedAsync, currentProject, clearError]); // Add executeNamedAsync dependency
+  }, [user, token, executeNamedAsync, clearError]); // Removed currentProject to break circular dependency
 
   // Set current project and load its TaskMaster details
   const setCurrentProject = useCallback(async (project) => {
@@ -238,7 +242,7 @@ export const TaskMasterProvider = ({ children }) => {
       setTasks([]);
       setNextTask(null);
     }
-  }, [currentProject, user, token, executeNamedAsync, clearError]);
+  }, [user, token, executeNamedAsync, clearError]); // Removed currentProject to break circular dependency
 
   // Load initial data on mount or when auth changes
   useEffect(() => {
@@ -252,7 +256,7 @@ export const TaskMasterProvider = ({ children }) => {
         token: !!token
       });
     }
-  }, [authLoading, user, token]); // Removed function dependencies to prevent infinite loop
+  }, [authLoading, user, token]); // Fixed: Remove function dependencies to prevent circular dependency
 
   // Clear errors when authentication changes
   useEffect(() => {
@@ -266,12 +270,21 @@ export const TaskMasterProvider = ({ children }) => {
     if (currentProject?.name && user && token) {
       refreshTasks();
     }
-  }, [currentProject?.name, user, token, refreshTasks]);
+  }, [currentProject?.name, user, token]); // Removed refreshTasks to break circular dependency
 
   // Handle WebSocket messages for TaskMaster updates
   useEffect(() => {
     const latestMessage = messages[messages.length - 1];
     if (!latestMessage) return;
+
+    // Only process TaskMaster-specific messages to prevent infinite loops
+    const isTaskMasterMessage = [
+      'taskmaster-project-updated',
+      'taskmaster-tasks-updated', 
+      'taskmaster-mcp-status-changed'
+    ].includes(latestMessage.type);
+
+    if (!isTaskMasterMessage) return;
 
     switch (latestMessage.type) {
       case 'taskmaster-project-updated':
@@ -294,10 +307,10 @@ export const TaskMasterProvider = ({ children }) => {
         break;
 
       default:
-        // Ignore non-TaskMaster messages
+        // This shouldn't be reached due to isTaskMasterMessage check
         break;
     }
-  }, [messages, refreshProjects, refreshTasks, refreshMCPStatus, currentProject]);
+  }, [messages?.length, currentProject?.name]); // Only depend on messages length and current project name
 
   // Context value
   const contextValue = {
