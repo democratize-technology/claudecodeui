@@ -382,7 +382,6 @@ async function extractProjectDirectory(projectName) {
 }
 
 async function getProjects() {
-  
   // ORIGINAL CODE - RE-ENABLED WITH OPTIMIZATIONS
   const claudeDir = path.join(process.env.HOME, '.claude', 'projects');
   const config = await loadProjectConfig();
@@ -403,7 +402,9 @@ async function getProjects() {
 
     for (const entry of entries) {
       if (processedCount >= maxProjects) {
-        console.log(`⚡ Quick fix: Limited to ${maxProjects} projects (${entries.length - maxProjects} remaining)`);
+        console.log(
+          `⚡ Quick fix: Limited to ${maxProjects} projects (${entries.length - maxProjects} remaining)`
+        );
         break;
       }
       if (entry.isDirectory()) {

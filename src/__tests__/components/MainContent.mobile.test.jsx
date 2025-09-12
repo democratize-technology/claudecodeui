@@ -22,31 +22,31 @@ jest.mock('../../utils/api', () => ({
 // Mock child components to focus on mobile navigation testing
 jest.mock('../../components/ChatInterface', () => {
   return function MockChatInterface() {
-    return <div data-testid="chat-interface">Chat Interface</div>;
+    return <div data-testid='chat-interface'>Chat Interface</div>;
   };
 });
 
 jest.mock('../../components/FileTree', () => {
   return function MockFileTree() {
-    return <div data-testid="file-tree">File Tree</div>;
+    return <div data-testid='file-tree'>File Tree</div>;
   };
 });
 
 jest.mock('../../components/Shell', () => {
   return function MockShell() {
-    return <div data-testid="shell">Shell</div>;
+    return <div data-testid='shell'>Shell</div>;
   };
 });
 
 jest.mock('../../components/GitPanel', () => {
   return function MockGitPanel() {
-    return <div data-testid="git-panel">Git Panel</div>;
+    return <div data-testid='git-panel'>Git Panel</div>;
   };
 });
 
 jest.mock('../../components/TaskList', () => {
   return function MockTaskList() {
-    return <div data-testid="task-list">Task List</div>;
+    return <div data-testid='task-list'>Task List</div>;
   };
 });
 
@@ -116,7 +116,7 @@ describe('MainContent Mobile Navigation', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     jest.clearAllMocks();
-    
+
     // Mock the contexts with default values
     useTaskMaster.mockReturnValue({
       tasks: [],
@@ -138,12 +138,12 @@ describe('MainContent Mobile Navigation', () => {
   describe('Mobile Hamburger Menu Rendering', () => {
     test('should render hamburger menu when isMobile is true', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
       expect(hamburgerButton).toHaveClass(
         'p-2.5',
@@ -161,47 +161,47 @@ describe('MainContent Mobile Navigation', () => {
 
     test('should not render hamburger menu when isMobile is false', () => {
       render(<MainContent {...defaultProps} isMobile={false} />);
-      
+
       const hamburgerButtons = screen.queryAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeUndefined();
     });
 
     test('should render hamburger menu in loading state when isMobile is true', () => {
       render(<MainContent {...defaultProps} isMobile={true} isLoading={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
       expect(hamburgerButton).toHaveClass('p-1.5');
     });
 
     test('should render hamburger menu in no-project state when isMobile is true', () => {
       render(<MainContent {...defaultProps} isMobile={true} selectedProject={null} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
       expect(hamburgerButton).toHaveClass('p-1.5');
     });
 
     test('should have proper SVG icon structure for hamburger menu', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       const svg = hamburgerButton.querySelector('svg');
       expect(svg).toHaveClass('w-6', 'h-6');
       expect(svg).toHaveAttribute('fill', 'none');
@@ -219,26 +219,26 @@ describe('MainContent Mobile Navigation', () => {
     test('should call onMenuClick when hamburger menu is clicked', () => {
       const mockOnMenuClick = jest.fn();
       render(<MainContent {...defaultProps} isMobile={true} onMenuClick={mockOnMenuClick} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       fireEvent.click(hamburgerButton);
-      
+
       expect(mockOnMenuClick).toHaveBeenCalledTimes(1);
     });
 
     test('should call onMenuClick when hamburger menu receives touch start event', () => {
       const mockOnMenuClick = jest.fn();
       render(<MainContent {...defaultProps} isMobile={true} onMenuClick={mockOnMenuClick} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       const touchStartEvent = new TouchEvent('touchstart', {
         touches: [{ clientX: 100, clientY: 100 }],
         bubbles: true,
@@ -247,9 +247,9 @@ describe('MainContent Mobile Navigation', () => {
 
       // Mock preventDefault
       touchStartEvent.preventDefault = jest.fn();
-      
+
       fireEvent(hamburgerButton, touchStartEvent);
-      
+
       expect(mockOnMenuClick).toHaveBeenCalledTimes(1);
       expect(touchStartEvent.preventDefault).toHaveBeenCalled();
     });
@@ -257,38 +257,38 @@ describe('MainContent Mobile Navigation', () => {
     test('should prevent default behavior on touch start', () => {
       const mockOnMenuClick = jest.fn();
       render(<MainContent {...defaultProps} isMobile={true} onMenuClick={mockOnMenuClick} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       const mockPreventDefault = jest.fn();
       const touchStartEvent = {
         type: 'touchstart',
         preventDefault: mockPreventDefault,
         touches: [{ clientX: 100, clientY: 100 }]
       };
-      
+
       fireEvent.touchStart(hamburgerButton, touchStartEvent);
-      
+
       expect(mockOnMenuClick).toHaveBeenCalledTimes(1);
     });
 
     test('should handle multiple rapid taps correctly', () => {
       const mockOnMenuClick = jest.fn();
       render(<MainContent {...defaultProps} isMobile={true} onMenuClick={mockOnMenuClick} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Simulate rapid taps
       fireEvent.touchStart(hamburgerButton);
       fireEvent.touchStart(hamburgerButton);
       fireEvent.touchStart(hamburgerButton);
-      
+
       expect(mockOnMenuClick).toHaveBeenCalledTimes(3);
     });
   });
@@ -296,34 +296,34 @@ describe('MainContent Mobile Navigation', () => {
   describe('CSS Transform Feedback', () => {
     test('should apply touch-manipulation class for better touch handling', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toHaveClass('touch-manipulation');
     });
 
     test('should apply active:scale-95 class for touch feedback', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toHaveClass('active:scale-95');
     });
 
     test('should have proper hover states that work with touch devices', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toHaveClass(
         'hover:text-gray-900',
         'dark:hover:text-white',
@@ -334,30 +334,30 @@ describe('MainContent Mobile Navigation', () => {
 
     test('should apply visual feedback on active state', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Simulate active state by adding the class that would be applied by CSS
       act(() => {
         hamburgerButton.classList.add('scale-95');
       });
-      
+
       expect(hamburgerButton).toHaveClass('scale-95');
     });
 
     test('should have proper button sizing for touch targets', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toHaveClass('p-2.5'); // Adequate touch target size
-      
+
       const svg = hamburgerButton.querySelector('svg');
       expect(svg).toHaveClass('w-6', 'h-6'); // Proper icon size
     });
@@ -366,21 +366,21 @@ describe('MainContent Mobile Navigation', () => {
   describe('Responsive Design & Media Queries', () => {
     test('should adapt to mobile viewport changes', () => {
       mockMobileViewport(true);
-      
+
       const { rerender } = render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       let hamburgerButtons = screen.getAllByRole('button');
-      let hamburgerButton = hamburgerButtons.find(btn => 
+      let hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
       expect(hamburgerButton).toBeInTheDocument();
-      
+
       // Change to desktop viewport
       mockMobileViewport(false);
       rerender(<MainContent {...defaultProps} isMobile={false} />);
-      
+
       hamburgerButtons = screen.queryAllByRole('button');
-      hamburgerButton = hamburgerButtons.find(btn => 
+      hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
       expect(hamburgerButton).toBeUndefined();
@@ -389,26 +389,26 @@ describe('MainContent Mobile Navigation', () => {
     test('should handle touch device media query correctly', () => {
       mockTouchDevice(true);
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toHaveClass('touch-manipulation');
     });
 
     test('should maintain proper button hierarchy on mobile', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       // Check that hamburger menu appears before other UI elements
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
-      
+
       // Check that the hamburger button is in the header section
       const header = hamburgerButton.closest('.bg-white, .dark\\:bg-gray-800');
       expect(header).toBeInTheDocument();
@@ -419,101 +419,101 @@ describe('MainContent Mobile Navigation', () => {
   describe('Regression Tests - Transform Inherit Bug', () => {
     test('should NOT have transform: inherit that blocks visual feedback', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       const computedStyle = window.getComputedStyle(hamburgerButton);
-      
+
       // Ensure transform is not set to 'inherit' which would block feedback
       expect(computedStyle.transform).not.toBe('inherit');
     });
 
     test('should allow transform: scale(0.95) on active state', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Simulate the CSS active state
       act(() => {
         hamburgerButton.style.transform = 'scale(0.95)';
       });
-      
+
       const computedStyle = window.getComputedStyle(hamburgerButton);
       expect(computedStyle.transform).toBe('scale(0.95)');
     });
 
     test('should have active:scale-95 class that can override any inherit rules', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toHaveClass('active:scale-95');
-      
+
       // The class should be present and ready to override any inherited transforms
       expect(hamburgerButton.className).toContain('active:scale-95');
     });
 
     test('should properly reset transforms after interaction', () => {
       render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Simulate active state
       act(() => {
         hamburgerButton.style.transform = 'scale(0.95)';
       });
-      
+
       expect(hamburgerButton.style.transform).toBe('scale(0.95)');
-      
+
       // Simulate release/reset
       act(() => {
         hamburgerButton.style.transform = '';
       });
-      
+
       expect(hamburgerButton.style.transform).toBe('');
     });
 
     test('should maintain visual feedback capability across all hamburger menu instances', () => {
       // Test main content hamburger menu
       const { rerender } = render(<MainContent {...defaultProps} isMobile={true} />);
-      
+
       let hamburgerButtons = screen.getAllByRole('button');
-      let hamburgerButton = hamburgerButtons.find(btn => 
+      let hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toHaveClass('active:scale-95');
-      
+
       // Test loading state hamburger menu
       rerender(<MainContent {...defaultProps} isMobile={true} isLoading={true} />);
-      
+
       hamburgerButtons = screen.getAllByRole('button');
-      hamburgerButton = hamburgerButtons.find(btn => 
+      hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
-      
+
       // Test no-project state hamburger menu
       rerender(<MainContent {...defaultProps} isMobile={true} selectedProject={null} />);
-      
+
       hamburgerButtons = screen.getAllByRole('button');
-      hamburgerButton = hamburgerButtons.find(btn => 
+      hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
     });
   });
@@ -522,24 +522,24 @@ describe('MainContent Mobile Navigation', () => {
     test('should complete full mobile navigation interaction flow', async () => {
       const mockOnMenuClick = jest.fn();
       render(<MainContent {...defaultProps} isMobile={true} onMenuClick={mockOnMenuClick} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Step 1: Button is visible and properly styled
       expect(hamburgerButton).toBeInTheDocument();
       expect(hamburgerButton).toHaveClass('touch-manipulation', 'active:scale-95');
-      
+
       // Step 2: Touch interaction triggers callback
       fireEvent.touchStart(hamburgerButton);
       expect(mockOnMenuClick).toHaveBeenCalledTimes(1);
-      
+
       // Step 3: Click interaction also works
       fireEvent.click(hamburgerButton);
       expect(mockOnMenuClick).toHaveBeenCalledTimes(2);
-      
+
       // Step 4: Visual feedback can be applied
       act(() => {
         hamburgerButton.style.transform = 'scale(0.95)';
@@ -549,57 +549,57 @@ describe('MainContent Mobile Navigation', () => {
 
     test('should work correctly with different project states', () => {
       const mockOnMenuClick = jest.fn();
-      
+
       // Test with project selected
       const { rerender } = render(
         <MainContent {...defaultProps} isMobile={true} onMenuClick={mockOnMenuClick} />
       );
-      
+
       let hamburgerButtons = screen.getAllByRole('button');
-      let hamburgerButton = hamburgerButtons.find(btn => 
+      let hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
       fireEvent.click(hamburgerButton);
       expect(mockOnMenuClick).toHaveBeenCalledTimes(1);
-      
+
       // Test with no project selected
       mockOnMenuClick.mockClear();
       rerender(
-        <MainContent 
-          {...defaultProps} 
-          isMobile={true} 
+        <MainContent
+          {...defaultProps}
+          isMobile={true}
           onMenuClick={mockOnMenuClick}
           selectedProject={null}
         />
       );
-      
+
       hamburgerButtons = screen.getAllByRole('button');
-      hamburgerButton = hamburgerButtons.find(btn => 
+      hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
       fireEvent.click(hamburgerButton);
       expect(mockOnMenuClick).toHaveBeenCalledTimes(1);
-      
+
       // Test in loading state
       mockOnMenuClick.mockClear();
       rerender(
-        <MainContent 
-          {...defaultProps} 
-          isMobile={true} 
+        <MainContent
+          {...defaultProps}
+          isMobile={true}
           onMenuClick={mockOnMenuClick}
           isLoading={true}
         />
       );
-      
+
       hamburgerButtons = screen.getAllByRole('button');
-      hamburgerButton = hamburgerButtons.find(btn => 
+      hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
       fireEvent.click(hamburgerButton);
       expect(mockOnMenuClick).toHaveBeenCalledTimes(1);
@@ -607,36 +607,38 @@ describe('MainContent Mobile Navigation', () => {
 
     test('should handle edge cases gracefully', () => {
       // Test with undefined onMenuClick
-      const { rerender } = render(<MainContent {...defaultProps} isMobile={true} onMenuClick={undefined} />);
-      
+      const { rerender } = render(
+        <MainContent {...defaultProps} isMobile={true} onMenuClick={undefined} />
+      );
+
       let hamburgerButtons = screen.getAllByRole('button');
-      let hamburgerButton = hamburgerButtons.find(btn => 
+      let hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Should render the button even without handler
       expect(hamburgerButton).toBeInTheDocument();
-      
-      // Test with null onMenuClick  
+
+      // Test with null onMenuClick
       rerender(<MainContent {...defaultProps} isMobile={true} onMenuClick={null} />);
-      
+
       hamburgerButtons = screen.getAllByRole('button');
-      hamburgerButton = hamburgerButtons.find(btn => 
+      hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Should still render the button
       expect(hamburgerButton).toBeInTheDocument();
-      
+
       // Test with empty function
       const emptyFn = () => {};
       rerender(<MainContent {...defaultProps} isMobile={true} onMenuClick={emptyFn} />);
-      
+
       hamburgerButtons = screen.getAllByRole('button');
-      hamburgerButton = hamburgerButtons.find(btn => 
+      hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Should not throw when clicking with empty function
       expect(() => {
         fireEvent.click(hamburgerButton);
@@ -646,27 +648,27 @@ describe('MainContent Mobile Navigation', () => {
     test('should maintain accessibility standards', () => {
       const mockOnMenuClick = jest.fn();
       render(<MainContent {...defaultProps} isMobile={true} onMenuClick={mockOnMenuClick} />);
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       // Should have proper button role (implicit for <button> elements)
       expect(hamburgerButton).toBeInTheDocument();
       expect(hamburgerButton.tagName).toBe('BUTTON');
-      
+
       // Should be keyboard accessible (buttons are naturally focusable)
       expect(hamburgerButton.tabIndex).toBe(0);
-      
+
       // Should have focus support
       hamburgerButton.focus();
       expect(document.activeElement).toBe(hamburgerButton);
-      
+
       // Should support keyboard interaction (Enter key)
       fireEvent.keyDown(hamburgerButton, { key: 'Enter', code: 'Enter' });
       fireEvent.keyUp(hamburgerButton, { key: 'Enter', code: 'Enter' });
-      
+
       // Should support space key interaction
       fireEvent.keyDown(hamburgerButton, { key: ' ', code: 'Space' });
       fireEvent.keyUp(hamburgerButton, { key: ' ', code: 'Space' });
@@ -674,16 +676,16 @@ describe('MainContent Mobile Navigation', () => {
 
     test('should work correctly with session selection changes', () => {
       const mockOnMenuClick = jest.fn();
-      
+
       const { rerender } = render(
         <MainContent {...defaultProps} isMobile={true} onMenuClick={mockOnMenuClick} />
       );
-      
+
       // Test with session selected
       rerender(
-        <MainContent 
-          {...defaultProps} 
-          isMobile={true} 
+        <MainContent
+          {...defaultProps}
+          isMobile={true}
           onMenuClick={mockOnMenuClick}
           selectedSession={{
             id: 'test-session',
@@ -692,12 +694,12 @@ describe('MainContent Mobile Navigation', () => {
           }}
         />
       );
-      
+
       const hamburgerButtons = screen.getAllByRole('button');
-      const hamburgerButton = hamburgerButtons.find(btn => 
+      const hamburgerButton = hamburgerButtons.find((btn) =>
         btn.querySelector('svg path[d*="M4 6h16M4 12h16M4 18h16"]')
       );
-      
+
       expect(hamburgerButton).toBeInTheDocument();
       fireEvent.click(hamburgerButton);
       expect(mockOnMenuClick).toHaveBeenCalledTimes(1);

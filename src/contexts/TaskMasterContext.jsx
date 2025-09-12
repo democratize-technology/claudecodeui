@@ -280,7 +280,7 @@ export const TaskMasterProvider = ({ children }) => {
     // Only process TaskMaster-specific messages to prevent infinite loops
     const isTaskMasterMessage = [
       'taskmaster-project-updated',
-      'taskmaster-tasks-updated', 
+      'taskmaster-tasks-updated',
       'taskmaster-mcp-status-changed'
     ].includes(latestMessage.type);
 

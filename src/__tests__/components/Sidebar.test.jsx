@@ -98,9 +98,7 @@ const createMockProjects = () => [
   }),
   createMockProject('project-2', {
     displayName: 'Test Project 2',
-    sessions: [
-      createMockSession('session-3', 'Session 3')
-    ],
+    sessions: [createMockSession('session-3', 'Session 3')],
     sessionCount: 1,
     starred: true
   }),
@@ -113,9 +111,9 @@ const createMockProjects = () => [
 
 // Test wrapper components
 const MockTaskMasterProvider = ({ children, currentProject = null }) => (
-  <TaskMasterProvider 
-    value={{ 
-      currentProject, 
+  <TaskMasterProvider
+    value={{
+      currentProject,
       setCurrentProject: jest.fn(),
       tasks: [],
       addTask: jest.fn(),
@@ -128,9 +126,7 @@ const MockTaskMasterProvider = ({ children, currentProject = null }) => (
 );
 
 const MockTasksSettingsProvider = ({ children, tasksEnabled = false }) => (
-  <TasksSettingsProvider value={{ tasksEnabled }}>
-    {children}
-  </TasksSettingsProvider>
+  <TasksSettingsProvider value={{ tasksEnabled }}>{children}</TasksSettingsProvider>
 );
 
 const SidebarTestWrapper = ({
@@ -155,7 +151,7 @@ const SidebarTestWrapper = ({
   <WebSocketProvider>
     <MockTaskMasterProvider currentProject={currentProject}>
       <MockTasksSettingsProvider tasksEnabled={tasksEnabled}>
-        <div data-testid="sidebar-container" style={{ height: '600px', width: '300px' }}>
+        <div data-testid='sidebar-container' style={{ height: '600px', width: '300px' }}>
           <Sidebar
             projects={projects}
             selectedProject={selectedProject}
@@ -182,19 +178,19 @@ const SidebarTestWrapper = ({
 // Performance testing utilities
 const createPerformanceBenchmark = () => {
   const measurements = [];
-  
+
   const benchmark = async (name, fn) => {
     const start = performance.now();
     await fn();
     const end = performance.now();
     const duration = end - start;
-    
+
     measurements.push({ name, duration, timestamp: Date.now() });
     return { name, duration, average: duration };
   };
 
   const getMeasurements = () => measurements;
-  const clearMeasurements = () => measurements.length = 0;
+  const clearMeasurements = () => (measurements.length = 0);
 
   return { benchmark, getMeasurements, clearMeasurements };
 };
@@ -202,7 +198,7 @@ const createPerformanceBenchmark = () => {
 // Touch event utilities
 const createTouchEvent = (type, touches = []) => {
   const touchEvent = new Event(type, { bubbles: true, cancelable: true });
-  touchEvent.touches = touches.map(touch => ({
+  touchEvent.touches = touches.map((touch) => ({
     clientX: touch.x,
     clientY: touch.y,
     target: touch.target
@@ -252,10 +248,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
   describe('Desktop Click Interactions', () => {
     it('should handle project selection clicks on desktop without preventDefault interference', async () => {
       const { rerender } = render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
+        <SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />
       );
 
       // Find the first project button
@@ -289,7 +282,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
 
     it('should handle session selection clicks correctly', async () => {
       render(
-        <SidebarTestWrapper 
+        <SidebarTestWrapper
           projects={mockProjects}
           onProjectSelect={onProjectSelect}
           onSessionSelect={onSessionSelect}
@@ -319,34 +312,31 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should handle rapid desktop clicks without race conditions', async () => {
-      const projects = Array.from({ length: 5 }, (_, i) => 
+      const projects = Array.from({ length: 5 }, (_, i) =>
         createMockProject(`rapid-project-${i}`, { displayName: `Rapid Project ${i}` })
       );
 
-      render(
-        <SidebarTestWrapper 
-          projects={projects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={projects} onProjectSelect={onProjectSelect} />);
 
       const measurement = await performanceBenchmark.benchmark('rapid-desktop-clicks', async () => {
         // Rapidly click multiple projects
         for (let i = 0; i < projects.length; i++) {
-          const projectButton = screen.getByRole('button', { name: new RegExp(`rapid project ${i}`, 'i') });
-          
+          const projectButton = screen.getByRole('button', {
+            name: new RegExp(`rapid project ${i}`, 'i')
+          });
+
           await act(async () => {
             fireEvent.click(projectButton);
           });
-          
+
           // Small delay to simulate real user behavior
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
       });
 
       // All clicks should have been processed
       expect(onProjectSelect).toHaveBeenCalledTimes(projects.length);
-      
+
       // Performance should be good (< 500ms for 5 rapid clicks)
       expect(measurement.duration).toBeLessThan(500);
     });
@@ -354,12 +344,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
 
   describe('onTouchEnd Regression Prevention', () => {
     it('should prevent the specific bug where handleTouchClick blocks desktop clicks', async () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />);
 
       const projectButton = screen.getByRole('button', { name: /test project 1/i });
 
@@ -396,20 +381,13 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should handle mixed touch and click events without interference', async () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />);
 
       const project1Button = screen.getByRole('button', { name: /test project 1/i });
       const project2Button = screen.getByRole('button', { name: /test project 2/i });
 
       // Mix of touch and click events
-      const touchEvent = createTouchEvent('touchend', [
-        { x: 100, y: 100, target: project1Button }
-      ]);
+      const touchEvent = createTouchEvent('touchend', [{ x: 100, y: 100, target: project1Button }]);
 
       // Touch first project
       await act(async () => {
@@ -436,22 +414,15 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should handle touch events correctly on mobile devices', async () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />);
 
       const projectButton = screen.getByRole('button', { name: /test project 1/i });
-      
+
       // Create touch events
       const touchStart = createTouchEvent('touchstart', [
         { x: 100, y: 100, target: projectButton }
       ]);
-      const touchEnd = createTouchEvent('touchend', [
-        { x: 100, y: 100, target: projectButton }
-      ]);
+      const touchEnd = createTouchEvent('touchend', [{ x: 100, y: 100, target: projectButton }]);
 
       // Simulate touch interaction
       await act(async () => {
@@ -461,41 +432,36 @@ describe('Sidebar Component - Project Selection Tests', () => {
 
       // Touch should work and select project
       expect(onProjectSelect).toHaveBeenCalledWith(mockProjects[0]);
-      
+
       // Touch events should have preventDefault called to avoid scrolling issues
       expect(touchEnd.preventDefault).toHaveBeenCalled();
       expect(touchEnd.stopPropagation).toHaveBeenCalled();
     });
 
     it('should handle touch events efficiently without performance degradation', async () => {
-      const projects = Array.from({ length: 10 }, (_, i) => 
+      const projects = Array.from({ length: 10 }, (_, i) =>
         createMockProject(`mobile-project-${i}`, { displayName: `Mobile Project ${i}` })
       );
 
-      render(
-        <SidebarTestWrapper 
-          projects={projects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={projects} onProjectSelect={onProjectSelect} />);
 
       const measurement = await performanceBenchmark.benchmark('mobile-touch-events', async () => {
         // Simulate rapid touch interactions
         for (let i = 0; i < 5; i++) {
-          const projectButton = screen.getByRole('button', { 
-            name: new RegExp(`mobile project ${i}`, 'i') 
+          const projectButton = screen.getByRole('button', {
+            name: new RegExp(`mobile project ${i}`, 'i')
           });
-          
+
           const touchEvent = createTouchEvent('touchend', [
-            { x: 100, y: 100 + (i * 50), target: projectButton }
+            { x: 100, y: 100 + i * 50, target: projectButton }
           ]);
 
           await act(async () => {
             fireEvent(projectButton, touchEvent);
           });
-          
+
           // Small delay to simulate real touch behavior
-          await new Promise(resolve => setTimeout(resolve, 20));
+          await new Promise((resolve) => setTimeout(resolve, 20));
         }
       });
 
@@ -507,15 +473,10 @@ describe('Sidebar Component - Project Selection Tests', () => {
 
   describe('Keyboard Navigation & Accessibility', () => {
     it('should support keyboard navigation with Tab key', async () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />);
 
       const user = userEvent.setup();
-      
+
       // Tab to first project
       await act(async () => {
         await user.tab();
@@ -534,15 +495,10 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should support Space key for project selection', async () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />);
 
       const firstProject = screen.getByRole('button', { name: /test project 1/i });
-      
+
       // Focus and press Space
       await act(async () => {
         firstProject.focus();
@@ -553,19 +509,15 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should have proper ARIA attributes for accessibility', () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} />);
 
       // All project buttons should have proper accessibility attributes
       const projectButtons = screen.getAllByRole('button');
-      
-      projectButtons.forEach(button => {
+
+      projectButtons.forEach((button) => {
         // Should be focusable
         expect(button).toHaveAttribute('tabIndex');
-        
+
         // Should have accessible content
         expect(button.textContent).toBeTruthy();
       });
@@ -579,11 +531,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
   describe('Performance & Loading States', () => {
     it('should handle project loading states correctly', async () => {
       const { rerender } = render(
-        <SidebarTestWrapper 
-          projects={[]}
-          isLoading={true}
-          onProjectSelect={onProjectSelect}
-        />
+        <SidebarTestWrapper projects={[]} isLoading={true} onProjectSelect={onProjectSelect} />
       );
 
       // Should show loading state (assuming there's a loading indicator)
@@ -591,7 +539,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
 
       // Simulate loading completion
       rerender(
-        <SidebarTestWrapper 
+        <SidebarTestWrapper
           projects={mockProjects}
           isLoading={false}
           onProjectSelect={onProjectSelect}
@@ -605,30 +553,28 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should perform project selection within performance thresholds', async () => {
-      const largeProjectList = Array.from({ length: 50 }, (_, i) => 
+      const largeProjectList = Array.from({ length: 50 }, (_, i) =>
         createMockProject(`perf-project-${i}`, {
           displayName: `Performance Project ${i}`,
-          sessions: Array.from({ length: 5 }, (_, j) => 
+          sessions: Array.from({ length: 5 }, (_, j) =>
             createMockSession(`session-${i}-${j}`, `Session ${j}`)
           )
         })
       );
 
-      render(
-        <SidebarTestWrapper 
-          projects={largeProjectList}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={largeProjectList} onProjectSelect={onProjectSelect} />);
 
-      const measurement = await performanceBenchmark.benchmark('large-project-selection', async () => {
-        // Select project from large list
-        const targetProject = screen.getByRole('button', { name: /performance project 25/i });
-        
-        await act(async () => {
-          await userEvent.click(targetProject);
-        });
-      });
+      const measurement = await performanceBenchmark.benchmark(
+        'large-project-selection',
+        async () => {
+          // Select project from large list
+          const targetProject = screen.getByRole('button', { name: /performance project 25/i });
+
+          await act(async () => {
+            await userEvent.click(targetProject);
+          });
+        }
+      );
 
       // Selection should be fast even with large project list
       expect(measurement.duration).toBeLessThan(100);
@@ -636,17 +582,12 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should handle session loading efficiently', async () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />);
 
       const measurement = await performanceBenchmark.benchmark('session-loading', async () => {
         // Expand project to load sessions
         const projectButton = screen.getByRole('button', { name: /test project 1/i });
-        
+
         await act(async () => {
           await userEvent.click(projectButton);
         });
@@ -673,14 +614,14 @@ describe('Sidebar Component - Project Selection Tests', () => {
       ];
 
       render(
-        <SidebarTestWrapper 
+        <SidebarTestWrapper
           projects={projectsWithEmptySessions}
           onProjectSelect={onProjectSelect}
         />
       );
 
       const projectButton = screen.getByRole('button', { name: /empty project/i });
-      
+
       await act(async () => {
         await userEvent.click(projectButton);
       });
@@ -690,12 +631,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should handle concurrent project selection attempts', async () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />);
 
       const project1Button = screen.getByRole('button', { name: /test project 1/i });
       const project2Button = screen.getByRole('button', { name: /test project 2/i });
@@ -704,7 +640,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
       await act(async () => {
         const click1 = userEvent.click(project1Button);
         const click2 = userEvent.click(project2Button);
-        
+
         await Promise.all([click1, click2]);
       });
 
@@ -723,10 +659,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
       // Should not crash with malformed data
       expect(() => {
         render(
-          <SidebarTestWrapper 
-            projects={malformedProjects}
-            onProjectSelect={onProjectSelect}
-          />
+          <SidebarTestWrapper projects={malformedProjects} onProjectSelect={onProjectSelect} />
         );
       }).not.toThrow();
     });
@@ -735,7 +668,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
   describe('Integration Tests', () => {
     it('should integrate properly with TaskMaster context', async () => {
       const setCurrentProject = jest.fn();
-      
+
       render(
         <WebSocketProvider>
           <MockTaskMasterProvider currentProject={null}>
@@ -751,8 +684,8 @@ describe('Sidebar Component - Project Selection Tests', () => {
                 onRefresh={jest.fn()}
                 onShowSettings={jest.fn()}
                 updateAvailable={false}
-                latestVersion="1.0.0"
-                currentVersion="1.0.0"
+                latestVersion='1.0.0'
+                currentVersion='1.0.0'
                 onShowVersionModal={jest.fn()}
               />
             </MockTasksSettingsProvider>
@@ -761,7 +694,7 @@ describe('Sidebar Component - Project Selection Tests', () => {
       );
 
       const projectButton = screen.getByRole('button', { name: /test project 1/i });
-      
+
       await act(async () => {
         await userEvent.click(projectButton);
       });
@@ -770,16 +703,11 @@ describe('Sidebar Component - Project Selection Tests', () => {
     });
 
     it('should handle search filtering correctly', async () => {
-      render(
-        <SidebarTestWrapper 
-          projects={mockProjects}
-          onProjectSelect={onProjectSelect}
-        />
-      );
+      render(<SidebarTestWrapper projects={mockProjects} onProjectSelect={onProjectSelect} />);
 
       // Look for search input (if it exists in the component)
       const searchInput = screen.queryByPlaceholderText(/search/i);
-      
+
       if (searchInput) {
         await act(async () => {
           await userEvent.type(searchInput, 'Project 1');
