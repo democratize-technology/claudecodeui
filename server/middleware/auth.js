@@ -1,8 +1,11 @@
 import jwt from 'jsonwebtoken';
 import { userDb } from '../database/db.js';
 
-// Get JWT secret from environment or use default (for development)
-const JWT_SECRET = process.env.JWT_SECRET || 'claude-ui-dev-secret-change-in-production';
+// Require JWT secret from environment - no fallback for security
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required for security');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Optional API key middleware
 const validateApiKey = (req, res, next) => {
@@ -44,15 +47,15 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Generate JWT token (never expires)
+// Generate JWT token with 24-hour expiration
 const generateToken = (user) => {
   return jwt.sign(
     {
       userId: user.id,
       username: user.username
     },
-    JWT_SECRET
-    // No expiration - token lasts forever
+    JWT_SECRET,
+    { expiresIn: '24h' }
   );
 };
 

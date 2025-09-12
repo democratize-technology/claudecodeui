@@ -1,9 +1,42 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
+import rateLimit from 'express-rate-limit';
 import { userDb, db } from '../database/db.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Rate limiting for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs for auth endpoints
+  message: {
+    error: 'Too many authentication attempts. Please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  // Skip rate limiting for successful authentication
+  skipSuccessfulRequests: true
+});
+
+// More strict rate limiting for failed login attempts (progressive delays)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Allow more login attempts but track failures
+  message: {
+    error: 'Too many failed login attempts. Please try again later.',
+    retryAfter: '15 minutes'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Only count failed requests towards the limit
+  skipSuccessfulRequests: true,
+  // Custom key generator to track by IP + username combination for more targeted limiting
+  keyGenerator: (req) => {
+    return `${req.ip}-${req.body?.username || 'unknown'}`;
+  }
+});
 
 // Check auth status and setup requirements
 router.get('/status', async (req, res) => {
@@ -20,7 +53,7 @@ router.get('/status', async (req, res) => {
 });
 
 // User registration (setup) - only allowed if no users exist
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -82,7 +115,7 @@ router.post('/register', async (req, res) => {
 });
 
 // User login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 

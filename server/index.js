@@ -169,9 +169,25 @@ const wss = new WebSocketServer({
   verifyClient: (info) => {
     console.log('WebSocket connection attempt to:', info.req.url);
 
-    // Extract token from query parameters or headers
-    const url = new URL(info.req.url, 'http://localhost');
-    const token = url.searchParams.get('token') || info.req.headers.authorization?.split(' ')[1];
+    // Extract token from subprotocols (secure) or fallback to headers/query (compatibility)
+    let token = null;
+
+    // First try to get token from WebSocket subprotocols (secure method)
+    if (info.req.headers['sec-websocket-protocol']) {
+      const protocols = info.req.headers['sec-websocket-protocol'].split(',').map((p) => p.trim());
+      for (const protocol of protocols) {
+        if (protocol.startsWith('Bearer ')) {
+          token = protocol.substring(7); // Remove 'Bearer ' prefix
+          break;
+        }
+      }
+    }
+
+    // Fallback to query parameters or authorization header (for compatibility)
+    if (!token) {
+      const url = new URL(info.req.url, 'http://localhost');
+      token = url.searchParams.get('token') || info.req.headers.authorization?.split(' ')[1];
+    }
 
     // Verify token
     const user = authenticateWebSocket(token);
