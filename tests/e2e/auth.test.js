@@ -88,7 +88,7 @@ describe('Authentication Helper', () => {
     expect(userInfo).toBeTruthy();
     expect(userInfo.user).toBeTruthy();
     expect(userInfo.user.username).toBe('testuser');
-    expect(userInfo.user.id).toBe(2);
+    expect(userInfo.user.id).toBe(1);
 
     console.log('✅ User info test passed');
   });

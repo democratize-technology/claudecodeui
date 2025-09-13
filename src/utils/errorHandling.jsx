@@ -115,7 +115,11 @@ export function handleError(
     [ERROR_SEVERITY.CRITICAL]: 'error'
   }[severity];
 
-  console[logLevel](`[${category.toUpperCase()}] ${severity.toUpperCase()}:`, errorContext);
+  const log = (level, message, context) => {
+    console[level](message, context);
+  };
+
+  log(logLevel, `[${category.toUpperCase()}] ${severity.toUpperCase()}:`, errorContext);
 
   // Get user-friendly message
   const userMessage =

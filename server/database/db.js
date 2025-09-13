@@ -4,6 +4,8 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
+import bcrypt from 'bcrypt';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -20,6 +22,15 @@ const initializeDatabase = async () => {
     const initSQL = fs.readFileSync(INIT_SQL_PATH, 'utf8');
     db.exec(initSQL);
     console.log('Database initialized successfully');
+
+    // Conditionally create a test user for e2e tests if no users exist
+    if (!userDb.hasUsers() && (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development')) {
+      const TEST_USERNAME = 'testuser';
+      const TEST_PASSWORD = 'password123';
+      const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10);
+      userDb.createUser(TEST_USERNAME, hashedPassword);
+      console.log(`✅ Test user '${TEST_USERNAME}' created for e2e/development environment.`);
+    }
   } catch (error) {
     console.error('Error initializing database:', error.message);
     throw error;

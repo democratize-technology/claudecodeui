@@ -204,17 +204,6 @@ async function verifyAuthentication(page) {
           pageText.includes('No projects found') ||
           pageText.includes('Quick Settings'));
 
-      // Debug info for test environment only
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('Auth verification:', {
-          hasAuthToken,
-          hasLoginIndicators,
-          isLoading,
-          hasMainAppContent,
-          bodyTextSample: `${pageText.substring(0, 200)}...`
-        });
-      }
-
       return hasAuthToken && !hasLoginIndicators && !isLoading && hasMainAppContent;
     });
 
