@@ -5,6 +5,10 @@
 
 import { useCallback, useState, useRef } from 'react';
 
+// Global operation tracking to prevent race conditions across all hook instances
+// This ensures that if any component is running a named operation, all other components are aware
+const globalActiveOperations = new Set();
+
 /**
  * Hook for managing loading states in React components with consistent patterns
  * @param {Object} options - Configuration options
@@ -69,14 +73,15 @@ export function useLoadingState(options = {}) {
   // Execute async operation with automatic loading state management
   const executeAsync = useCallback(
     async (operation, operationName = 'async-operation') => {
-      // Prevent duplicate operations
-      if (activeOperations.current.has(operationName)) {
+      // Prevent duplicate operations - check both local and global tracking
+      if (activeOperations.current.has(operationName) || globalActiveOperations.has(operationName)) {
         console.warn(`useLoadingState: Operation '${operationName}' is already running`);
         return;
       }
 
       try {
         activeOperations.current.add(operationName);
+        globalActiveOperations.add(operationName);
         setLoading(true, operationName);
 
         const result = await operation();
@@ -93,6 +98,7 @@ export function useLoadingState(options = {}) {
         throw error; // Re-throw to allow upstream error handling
       } finally {
         activeOperations.current.delete(operationName);
+        globalActiveOperations.delete(operationName);
       }
     },
     [setLoading, autoReset]
@@ -108,14 +114,15 @@ export function useLoadingState(options = {}) {
         return;
       }
 
-      // Prevent duplicate operations
-      if (activeOperations.current.has(operationId)) {
+      // Prevent duplicate operations - check both local and global tracking
+      if (activeOperations.current.has(operationId) || globalActiveOperations.has(operationId)) {
         console.warn(`useLoadingState: Named operation '${operationId}' is already running`);
         return;
       }
 
       try {
         activeOperations.current.add(operationId);
+        globalActiveOperations.add(operationId);
         setNamedLoading(name, true);
 
         const result = await operation();
@@ -132,6 +139,7 @@ export function useLoadingState(options = {}) {
         throw error;
       } finally {
         activeOperations.current.delete(operationId);
+        globalActiveOperations.delete(operationId);
       }
     },
     [multipleStates, setNamedLoading, autoReset]
@@ -142,6 +150,10 @@ export function useLoadingState(options = {}) {
     setIsLoading(false);
     if (multipleStates) {
       setLoadingStates({});
+    }
+    // Clear operations from both local and global tracking
+    for (const operationId of activeOperations.current) {
+      globalActiveOperations.delete(operationId);
     }
     activeOperations.current.clear();
     notifyChange(false, 'reset');

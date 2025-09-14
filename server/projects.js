@@ -208,6 +208,9 @@ const projectDirectoryCache = new Map();
 // Clear cache when needed (called when project files change)
 function clearProjectDirectoryCache() {
   projectDirectoryCache.clear();
+  // Also clear the projects cache to force refresh
+  projectsCache = null;
+  cacheTimestamp = 0;
 }
 
 // Load project configuration file
@@ -381,7 +384,18 @@ async function extractProjectDirectory(projectName) {
   }
 }
 
+// Cache for getProjects to prevent repeated file system operations
+let projectsCache = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 2000; // 2 seconds cache
+
 async function getProjects() {
+  // Check cache first - prevent repeated expensive operations
+  const now = Date.now();
+  if (projectsCache && (now - cacheTimestamp) < CACHE_TTL_MS) {
+    return projectsCache;
+  }
+
   // ORIGINAL CODE - RE-ENABLED WITH OPTIMIZATIONS
   const claudeDir = path.join(process.env.HOME, '.claude', 'projects');
   const config = await loadProjectConfig();
@@ -399,13 +413,17 @@ async function getProjects() {
     const maxProjects = process.env.NODE_ENV === 'development' ? 10 : 50;
     let processedCount = 0;
 
+    // Log project limiting only once when first hit
+    let limitLoggedThisCall = false;
+
     for (const entry of entries) {
       if (processedCount >= maxProjects) {
-        // Log once at debug level, not every time
-        if (processedCount === maxProjects) {
-          console.debug(
-            `Project loading limited to ${maxProjects} (${entries.length - maxProjects} remaining). Set MAX_PROJECTS env var to increase.`
+        // Log once per function call, only in development mode
+        if (!limitLoggedThisCall && process.env.NODE_ENV === 'development') {
+          console.log(
+            `🔧 DEV: Project loading limited to ${maxProjects} (${entries.length - maxProjects} remaining). Set MAX_PROJECTS env var to increase.`
           );
+          limitLoggedThisCall = true;
         }
         break;
       }
@@ -580,6 +598,10 @@ async function getProjects() {
       projects.push(project);
     }
   }
+
+  // Cache the results before returning
+  projectsCache = projects;
+  cacheTimestamp = Date.now();
 
   return projects;
 }

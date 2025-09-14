@@ -142,6 +142,11 @@ export const TaskMasterProvider = ({ children }) => {
   // Set current project and load its TaskMaster details
   const setCurrentProject = useCallback(async (project) => {
     try {
+      // If the same project is already selected, don't make unnecessary API calls
+      if (currentProject?.name === project?.name) {
+        return;
+      }
+
       setCurrentProjectState(project);
 
       // Clear previous project's data immediately when switching projects
@@ -173,7 +178,7 @@ export const TaskMasterProvider = ({ children }) => {
       // Fall back to project data if available
       setProjectTaskMaster(project?.taskmaster || null);
     }
-  }, []);
+  }, [currentProject?.name]);
 
   // Refresh MCP server status
   const refreshMCPStatus = useCallback(async () => {

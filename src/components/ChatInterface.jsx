@@ -1396,6 +1396,9 @@ function ChatInterface({
     loadingLoading: isLoading,
     sessionMessagesLoading: isLoadingSessionMessages,
     moreMessagesLoading: isLoadingMoreMessages,
+    setLoadingLoading: setIsLoading,
+    setSessionMessagesLoading: setIsLoadingSessionMessages,
+    setMoreMessagesLoading: setIsLoadingMoreMessages,
     executeNamedAsync
   } = useMultipleLoadingStates(['loading', 'sessionMessages', 'moreMessages']);
 

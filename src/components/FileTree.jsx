@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
 import {
@@ -26,12 +26,6 @@ function FileTree({ selectedProject }) {
 
   const { isLoading: loading, executeAsync } = useLoadingState();
 
-  useEffect(() => {
-    if (selectedProject) {
-      fetchFiles();
-    }
-  }, [selectedProject]);
-
   // Load view mode preference from localStorage
   useEffect(() => {
     const savedViewMode = localStorage.getItem('file-tree-view-mode');
@@ -40,7 +34,9 @@ function FileTree({ selectedProject }) {
     }
   }, []);
 
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
+    if (!selectedProject) return;
+
     try {
       await executeAsync(async () => {
         const data = await api.getFiles(selectedProject.name);
@@ -50,7 +46,11 @@ function FileTree({ selectedProject }) {
       console.error('❌ Error fetching files:', error);
       setFiles([]);
     }
-  };
+  }, [selectedProject, executeAsync]);
+
+  useEffect(() => {
+    fetchFiles();
+  }, [fetchFiles]);
 
   const toggleDirectory = (path) => {
     const newExpanded = new Set(expandedDirs);

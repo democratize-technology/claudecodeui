@@ -18,7 +18,7 @@
  * Handles both existing sessions (with real IDs) and new sessions (with temporary IDs).
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
@@ -108,8 +108,9 @@ function AppContent() {
   }, [sidebarOpen]);
 
   useEffect(() => {
-    // Fetch projects on component mount
-    fetchProjects();
+    // Fetch projects on component mount - use debounced version to prevent race conditions
+    // This prevents multiple App component instances from making simultaneous API calls
+    debouncedFetchProjects.current();
   }, []);
 
   // Helper function to determine if an update is purely additive (new sessions/projects)
@@ -288,18 +289,25 @@ function AppContent() {
     });
   };
 
-  // Expose fetchProjects globally for component access with debouncing
-  // Prevent rapid successive calls that can cause infinite loops
-  let refreshProjectsTimeout = null;
-  window.refreshProjects = (...args) => {
-    if (refreshProjectsTimeout) {
-      clearTimeout(refreshProjectsTimeout);
-    }
-    refreshProjectsTimeout = setTimeout(() => {
-      fetchProjects(...args);
-      refreshProjectsTimeout = null;
-    }, 1000); // 1 second debounce - prevents multiple calls within 1 second
-  };
+  // Debounced project fetching to prevent race conditions
+  const debouncedFetchProjects = useRef(null);
+
+  // Initialize debounced function once
+  if (!debouncedFetchProjects.current) {
+    let timeout = null;
+    debouncedFetchProjects.current = (...args) => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      timeout = setTimeout(() => {
+        fetchProjects(...args);
+        timeout = null;
+      }, 1000); // 1 second debounce
+    };
+  }
+
+  // Expose debounced version globally for component access
+  window.refreshProjects = debouncedFetchProjects.current;
 
   // Handle URL-based session loading
   useEffect(() => {
@@ -338,8 +346,11 @@ function AppContent() {
 
   const handleProjectSelect = (project) => {
     setSelectedProject(project);
-    setSelectedSession(null);
-    navigate('/');
+    // Don't clear the selected session - keep sessions visible when switching projects
+    // Only clear session if we're navigating away from a session URL
+    if (selectedSession && selectedSession.id && window.location.pathname.includes('/session/')) {
+      navigate('/');
+    }
     if (isMobile) {
       setSidebarOpen(false);
     }
