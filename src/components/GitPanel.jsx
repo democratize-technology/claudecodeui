@@ -166,7 +166,7 @@ function GitPanel({ selectedProject, isMobile }) {
           const response = await authenticatedFetch(
             `/api/git/status?project=${encodeURIComponent(selectedProject.name)}`
           );
-          const data = await response.json();
+          const data = response;
 
           if (data.error) {
             console.error('Git status error:', data.error);
@@ -210,7 +210,7 @@ function GitPanel({ selectedProject, isMobile }) {
       const response = await authenticatedFetch(
         `/api/git/branches?project=${encodeURIComponent(selectedProject.name)}`
       );
-      const data = await response.json();
+      const data = response;
 
       if (!data.error && data.branches) {
         setBranches(data.branches);
@@ -231,7 +231,7 @@ function GitPanel({ selectedProject, isMobile }) {
       const response = await authenticatedFetch(
         `/api/git/remote-status?project=${encodeURIComponent(selectedProject.name)}`
       );
-      const data = await response.json();
+      const data = response;
 
       if (!data.error) {
         setRemoteStatus(data);
@@ -549,7 +549,7 @@ function GitPanel({ selectedProject, isMobile }) {
       const response = await authenticatedFetch(
         `/api/git/diff?project=${encodeURIComponent(selectedProject.name)}&file=${encodeURIComponent(filePath)}`
       );
-      const data = await response.json();
+      const data = response;
 
       if (!data.error && data.diff) {
         setGitDiff((prev) => ({
@@ -568,7 +568,7 @@ function GitPanel({ selectedProject, isMobile }) {
       const response = await authenticatedFetch(
         `/api/git/commits?project=${encodeURIComponent(selectedProject.name)}&limit=10`
       );
-      const data = await response.json();
+      const data = response;
 
       if (!data.error && data.commits) {
         setRecentCommits(data.commits);
@@ -587,7 +587,7 @@ function GitPanel({ selectedProject, isMobile }) {
       const response = await authenticatedFetch(
         `/api/git/commit-diff?project=${encodeURIComponent(selectedProject.name)}&commit=${commitHash}`
       );
-      const data = await response.json();
+      const data = response;
 
       if (!data.error && data.diff) {
         setCommitDiffs((prev) => ({
@@ -1283,13 +1283,6 @@ function GitPanel({ selectedProject, isMobile }) {
                               <Sparkles className='w-4 h-4' />
                             )}
                           </button>
-                          <div style={{ display: 'none' }}>
-                            <Button
-                              onTranscript={(transcript) => setCommitMessage(transcript)}
-                              mode='default'
-                              className='p-1.5'
-                            />
-                          </div>
                         </div>
                       </div>
                       <div className='flex items-center justify-between mt-2'>

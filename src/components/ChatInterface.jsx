@@ -1641,7 +1641,7 @@ function ChatInterface({
     return safeLocalStorage.getItem('selected-provider', 'claude');
   });
   const [cursorModel, setCursorModel] = useState(() => {
-    return safeLocalStorage.getItem('cursor-model', 'gpt-5');
+    return safeLocalStorage.getItem('cursor-model') || 'gpt-5';
   });
   // When selecting a session from Sidebar, auto-switch provider to match session's origin
   useEffect(() => {

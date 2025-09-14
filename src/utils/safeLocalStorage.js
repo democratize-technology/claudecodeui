@@ -27,6 +27,23 @@ class SafeLocalStorage {
   }
 
   /**
+   * Sanitize a localStorage key to prevent key pollution
+   * @param {string} key - The key to sanitize
+   * @returns {string} - Sanitized key
+   */
+  sanitizeKey(key) {
+    if (typeof key !== 'string') {
+      throw new Error('localStorage key must be a string');
+    }
+
+    // Remove dangerous characters and limit length
+    return key
+      .replace(/[<>"/\\]/g, '') // Remove potential HTML/script chars
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .substring(0, 100); // Limit key length
+  }
+
+  /**
    * Safely get item from localStorage with fallback
    * @param {string} key - localStorage key
    * @param {any} fallback - fallback value if key doesn't exist or localStorage unavailable
@@ -38,7 +55,9 @@ class SafeLocalStorage {
     }
 
     try {
-      return localStorage.getItem(key);
+      const sanitizedKey = this.sanitizeKey(key);
+      const value = localStorage.getItem(sanitizedKey);
+      return value !== null ? value : fallback;
     } catch (error) {
       console.warn(`localStorage.getItem('${key}') failed:`, error.message);
       return fallback;
@@ -57,7 +76,8 @@ class SafeLocalStorage {
     }
 
     try {
-      localStorage.setItem(key, value);
+      const sanitizedKey = this.sanitizeKey(key);
+      localStorage.setItem(sanitizedKey, value);
       return true;
     } catch (error) {
       if (error.name === 'QuotaExceededError') {
@@ -80,7 +100,8 @@ class SafeLocalStorage {
     }
 
     try {
-      localStorage.removeItem(key);
+      const sanitizedKey = this.sanitizeKey(key);
+      localStorage.removeItem(sanitizedKey);
       return true;
     } catch (error) {
       console.warn(`localStorage.removeItem('${key}') failed:`, error.message);
@@ -89,7 +110,7 @@ class SafeLocalStorage {
   }
 
   /**
-   * Safely get and parse JSON from localStorage
+   * Safely get and parse JSON from localStorage with enhanced validation
    * @param {string} key - localStorage key
    * @param {any} fallback - fallback value if key doesn't exist, localStorage unavailable, or JSON invalid
    * @returns {any} - parsed JSON or fallback
@@ -97,12 +118,26 @@ class SafeLocalStorage {
   getJSON(key, fallback = null) {
     const stored = this.getItem(key);
 
-    if (stored === null) {
+    if (stored === null || stored === undefined) {
+      return fallback;
+    }
+
+    // Basic validation: must be string and reasonable length
+    if (typeof stored !== 'string' || stored.length > 100000) {
+      console.warn(`Invalid data format for localStorage key '${key}': too large or not string`);
       return fallback;
     }
 
     try {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+
+      // Additional validation: reject functions, symbols, or deeply nested objects
+      if (!this.isValidJSONValue(parsed)) {
+        console.warn(`Unsafe JSON content detected for localStorage key '${key}'`);
+        return fallback;
+      }
+
+      return parsed;
     } catch (error) {
       console.warn(`JSON.parse failed for localStorage key '${key}':`, error.message);
       return fallback;
@@ -159,6 +194,44 @@ class SafeLocalStorage {
       return [];
     }
   }
+
+  /**
+   * Validate that a JSON value is safe (no functions, symbols, excessive nesting)
+   * @param {any} value - The parsed JSON value to validate
+   * @param {number} depth - Current nesting depth (for recursion)
+   * @returns {boolean} - true if safe, false otherwise
+   */
+  isValidJSONValue(value, depth = 0) {
+    // Prevent deeply nested objects (potential DoS)
+    if (depth > 10) {
+      return false;
+    }
+
+    // Check for unsafe types
+    if (typeof value === 'function' || typeof value === 'symbol') {
+      return false;
+    }
+
+    // Arrays and objects need recursive validation
+    if (Array.isArray(value)) {
+      if (value.length > 1000) return false; // Prevent huge arrays
+      return value.every(item => this.isValidJSONValue(item, depth + 1));
+    }
+
+    if (value !== null && typeof value === 'object') {
+      const keys = Object.keys(value);
+      if (keys.length > 100) return false; // Prevent huge objects
+      return keys.every(key =>
+        typeof key === 'string' &&
+        key.length < 100 &&
+        this.isValidJSONValue(value[key], depth + 1)
+      );
+    }
+
+    // Primitive values are safe
+    return true;
+  }
+
 }
 
 // Create singleton instance
