@@ -10,7 +10,8 @@
 import React from 'react';
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
+// Jest globals - no import needed
+// vi is replaced with jest in Jest environment
 
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { TasksSettingsProvider } from '../../contexts/TasksSettingsContext';
@@ -32,8 +33,8 @@ const MockWebSocketProvider = ({ children, connectionState = 'connected' }) => {
 
   const contextValue = {
     connectionState: state,
-    sendMessage: vi.fn(),
-    reconnect: vi.fn(),
+    sendMessage: jest.fn(),
+    reconnect: jest.fn(),
     isConnected: state === 'connected'
   };
 
@@ -225,7 +226,7 @@ describe('Integration Stability Regression Tests', () => {
     webSocketMock.clearEvents();
 
     document.documentElement.classList.remove('dark', 'no-transition', 'theme-transition');
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Cross-Component Theme Integration', () => {
@@ -301,7 +302,7 @@ describe('Integration Stability Regression Tests', () => {
 
   describe('Error Recovery Integration', () => {
     it('should handle errors without breaking other component functionality', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       render(<FullAppSimulation simulateErrors={false} />);
 
@@ -354,7 +355,7 @@ describe('Integration Stability Regression Tests', () => {
     });
 
     it('should maintain navigation state through error recovery', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       render(<FullAppSimulation simulateErrors={false} />);
 

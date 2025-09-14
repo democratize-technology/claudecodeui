@@ -11,7 +11,8 @@
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
+// Jest globals - no import needed
+// vi is replaced with jest in Jest environment
 import ErrorBoundary from '../../components/ErrorBoundary';
 import { createErrorBoundaryTestUtils, createPerformanceBenchmark } from '../utils/test-utils';
 
@@ -89,14 +90,14 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
     performanceBenchmark = createPerformanceBenchmark();
 
     // Suppress error boundary console logs during tests
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     errorBoundaryUtils.clearStateChanges();
     performanceBenchmark.clearMeasurements();
     consoleErrorSpy.mockRestore();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Race Condition Prevention', () => {
@@ -265,7 +266,7 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
   describe('Error Recovery Reliability', () => {
     it('should maintain consistent state during error recovery', async () => {
-      const onRetry = vi.fn();
+      const onRetry = jest.fn();
       let errorInstance;
 
       const TestWrapper = () => {
@@ -557,7 +558,7 @@ describe('ErrorBoundary Race Condition Regression Tests', () => {
 
     it('should log errors to console', async () => {
       consoleErrorSpy.mockRestore();
-      const newConsoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const newConsoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       render(
         <ErrorBoundary>

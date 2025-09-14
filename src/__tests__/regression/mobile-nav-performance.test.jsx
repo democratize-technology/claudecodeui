@@ -10,7 +10,8 @@
 import React from 'react';
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
+// Jest globals - no import needed
+// vi is replaced with jest in Jest environment
 import MobileNav from '../../components/MobileNav';
 import { TasksSettingsProvider } from '../../contexts/TasksSettingsContext';
 import {
@@ -62,10 +63,10 @@ describe('MobileNav Performance Regression Tests', () => {
     flashDetector = createFlashDetector();
 
     // Mock IntersectionObserver for better test stability
-    global.IntersectionObserver = vi.fn().mockImplementation(() => ({
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn()
+    global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn()
     }));
 
     // Reset viewport to mobile size
@@ -85,7 +86,7 @@ describe('MobileNav Performance Regression Tests', () => {
     mobileNavUtils.clearMeasurements();
     performanceBenchmark.clearMeasurements();
     flashDetector.cleanup();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Transition Performance', () => {
@@ -194,7 +195,7 @@ describe('MobileNav Performance Regression Tests', () => {
 
   describe('Tab Navigation Performance', () => {
     it('should switch tabs quickly without layout thrashing', async () => {
-      const onTabChange = vi.fn();
+      const onTabChange = jest.fn();
       render(<MobileNavTestWrapper onTabChange={onTabChange} />);
 
       const tabs = ['chat', 'shell', 'files', 'git'];
@@ -217,7 +218,7 @@ describe('MobileNav Performance Regression Tests', () => {
     });
 
     it('should handle touch events efficiently', async () => {
-      const onTabChange = vi.fn();
+      const onTabChange = jest.fn();
       render(<MobileNavTestWrapper onTabChange={onTabChange} />);
 
       const chatButton = screen.getByLabelText('chat');
@@ -300,7 +301,7 @@ describe('MobileNav Performance Regression Tests', () => {
     });
 
     it('should maintain performance with tasks tab enabled', async () => {
-      const onTabChange = vi.fn();
+      const onTabChange = jest.fn();
       render(<MobileNavTestWrapper tasksEnabled={true} onTabChange={onTabChange} />);
 
       // Should have all 5 tabs including tasks

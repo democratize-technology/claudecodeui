@@ -22,8 +22,16 @@ export default {
 
   // Focus on regression tests
   testMatch: [
-    '<rootDir>/src/__tests__/regression/**/*.test.(js|jsx)',
-    '<rootDir>/src/__tests__/utils/test-utils.js'
+    '<rootDir>/src/__tests__/regression/**/*.test.(js|jsx)'
+  ],
+
+  // Exclude reporter files from test execution
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/src/__tests__/reporters/',
+    '<rootDir>/src/__tests__/processors/',
+    '<rootDir>/src/__tests__/plugins/',
+    '<rootDir>/src/__tests__/sequencer/'
   ],
 
   // Setup files for regression testing
@@ -50,10 +58,11 @@ export default {
           ['@babel/preset-env', { targets: { node: 'current' } }],
           ['@babel/preset-react', { runtime: 'automatic' }]
         ],
-        plugins: [
-          // Enable source maps for better debugging
-          ['babel-plugin-source-map-support', { registerInstance: false }]
-        ]
+        // Plugins disabled due to missing dependencies
+        // plugins: [
+        //   // Enable source maps for better debugging
+        //   ['babel-plugin-source-map-support', { registerInstance: false }]
+        // ]
       }
     ]
   },
@@ -121,7 +130,7 @@ export default {
       }
     ],
     // Performance reporter for benchmarking
-    '<rootDir>/src/__tests__/reporters/performance-reporter.js'
+    '<rootDir>/src/__tests__/reporters/performance-reporter.cjs'
   ],
 
   // Coverage reporters
@@ -161,15 +170,15 @@ export default {
   forceExit: false,
 
   // Test result processor for custom metrics
-  testResultsProcessor: '<rootDir>/src/__tests__/processors/regression-processor.js',
+  testResultsProcessor: '<rootDir>/src/__tests__/processors/regression-processor.cjs',
 
-  // Watch plugins for development
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
-    '<rootDir>/src/__tests__/plugins/regression-watch-plugin.js'
-  ],
+  // Watch plugins for development (commented out due to missing dependencies)
+  // watchPlugins: [
+  //   'jest-watch-typeahead/filename',
+  //   'jest-watch-typeahead/testname',
+  //   '<rootDir>/src/__tests__/plugins/regression-watch-plugin.js'
+  // ],
 
-  // Custom test sequencer for optimal regression test order
-  testSequencer: '<rootDir>/src/__tests__/sequencer/regression-sequencer.js'
+  // Custom test sequencer for optimal regression test order (commented out for now)
+  // testSequencer: '<rootDir>/src/__tests__/sequencer/regression-sequencer.js'
 };

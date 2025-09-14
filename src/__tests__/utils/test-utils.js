@@ -8,7 +8,8 @@
 
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
+// Jest globals - no import needed
+// vi is replaced with jest in Jest environment
 
 // Performance timing utilities
 export const createPerformanceMeasure = () => {
@@ -31,35 +32,35 @@ export const createThemeTestUtils = () => {
   const mockLocalStorage = (() => {
     let store = {};
     return {
-      getItem: vi.fn((key) => store[key] || null),
-      setItem: vi.fn((key, value) => {
+      getItem: jest.fn((key) => store[key] || null),
+      setItem: jest.fn((key, value) => {
         store[key] = value.toString();
       }),
-      removeItem: vi.fn((key) => {
+      removeItem: jest.fn((key) => {
         delete store[key];
       }),
-      clear: vi.fn(() => {
+      clear: jest.fn(() => {
         store = {};
       }),
       length: 0,
-      key: vi.fn()
+      key: jest.fn()
     };
   })();
 
   // Mock matchMedia with event tracking
-  const mockMatchMedia = vi.fn((query) => ({
+  const mockMatchMedia = jest.fn((query) => ({
     matches: query === '(prefers-color-scheme: dark)',
     media: query,
     onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn((event, handler) => {
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn((event, handler) => {
       if (event === 'change') {
         themeChangeEvents.push({ query, handler });
       }
     }),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn()
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn()
   }));
 
   // Monitor DOM transitions
@@ -239,8 +240,8 @@ export const createMobileNavTestUtils = () => {
       clientY: touch.y || 0,
       target: touch.target || document.body
     })),
-    preventDefault: vi.fn(),
-    stopPropagation: vi.fn()
+    preventDefault: jest.fn(),
+    stopPropagation: jest.fn()
   });
 
   // Measure transition performance

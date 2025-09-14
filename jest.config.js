@@ -31,8 +31,19 @@ export default {
 
   // Test match patterns
   testMatch: [
-    '<rootDir>/src/**/__tests__/**/*.(js|jsx)',
+    '<rootDir>/src/**/__tests__/**/*.(test|spec).(js|jsx)',
     '<rootDir>/src/**/?(*.)(test|spec).(js|jsx)'
+  ],
+
+  // Exclude utility files from test execution
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/src/__tests__/reporters/',
+    '<rootDir>/src/__tests__/processors/',
+    '<rootDir>/src/__tests__/plugins/',
+    '<rootDir>/src/__tests__/sequencer/',
+    '<rootDir>/src/__tests__/mocks/',
+    '<rootDir>/src/__tests__/utils/'
   ],
 
   // Coverage configuration

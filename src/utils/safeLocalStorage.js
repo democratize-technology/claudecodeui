@@ -215,23 +215,23 @@ class SafeLocalStorage {
     // Arrays and objects need recursive validation
     if (Array.isArray(value)) {
       if (value.length > 1000) return false; // Prevent huge arrays
-      return value.every(item => this.isValidJSONValue(item, depth + 1));
+      return value.every((item) => this.isValidJSONValue(item, depth + 1));
     }
 
     if (value !== null && typeof value === 'object') {
       const keys = Object.keys(value);
       if (keys.length > 100) return false; // Prevent huge objects
-      return keys.every(key =>
-        typeof key === 'string' &&
-        key.length < 100 &&
-        this.isValidJSONValue(value[key], depth + 1)
+      return keys.every(
+        (key) =>
+          typeof key === 'string' &&
+          key.length < 100 &&
+          this.isValidJSONValue(value[key], depth + 1)
       );
     }
 
     // Primitive values are safe
     return true;
   }
-
 }
 
 // Create singleton instance

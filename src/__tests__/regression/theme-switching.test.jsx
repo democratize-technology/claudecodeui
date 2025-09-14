@@ -11,7 +11,8 @@
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
+// Jest globals - no import needed
+// vi is replaced with jest in Jest environment
 import { ThemeProvider, useTheme } from '../../contexts/ThemeContext';
 import {
   createThemeTestUtils,
@@ -83,13 +84,13 @@ describe('Theme Switching Regression Tests', () => {
     flashDetector.cleanup();
     themeUtils.clearEvents();
     performanceBenchmark.clearMeasurements();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Visual Flash Prevention', () => {
     it('should not flash during theme switching', async () => {
       const themeChanges = [];
-      const onThemeChange = vi.fn((theme) => themeChanges.push(theme));
+      const onThemeChange = jest.fn((theme) => themeChanges.push(theme));
 
       render(
         <ThemeProvider>
@@ -237,7 +238,7 @@ describe('Theme Switching Regression Tests', () => {
         throw new Error('localStorage not available');
       });
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       render(
         <ThemeProvider>
@@ -263,8 +264,8 @@ describe('Theme Switching Regression Tests', () => {
       mockLocalStorage.getItem.mockReturnValue(null);
       mockMatchMedia.mockReturnValue({
         matches: false,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
       });
 
       render(

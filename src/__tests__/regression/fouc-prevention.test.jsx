@@ -10,7 +10,8 @@
 
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react';
-import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
+// Jest globals - no import needed
+// vi is replaced with jest in Jest environment
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import {
   createFOUCDetector,
@@ -24,10 +25,10 @@ const mockHTMLStructure = () => {
   const simulateInlineScript = (savedTheme = null, prefersDark = false) => {
     // Mock localStorage
     const mockStorage = {
-      getItem: vi.fn(() => savedTheme),
-      setItem: vi.fn(),
-      removeItem: vi.fn(),
-      clear: vi.fn()
+      getItem: jest.fn(() => savedTheme),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+      clear: jest.fn()
     };
 
     Object.defineProperty(window, 'localStorage', {
@@ -38,10 +39,10 @@ const mockHTMLStructure = () => {
     // Mock matchMedia
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: vi.fn(() => ({
+      value: jest.fn(() => ({
         matches: prefersDark,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
       }))
     });
 
@@ -121,7 +122,7 @@ describe('FOUC Prevention Regression Tests', () => {
     // Clean up document state
     document.documentElement.classList.remove('dark', 'no-transition', 'theme-transition');
 
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Initial Load FOUC Prevention', () => {
@@ -269,17 +270,17 @@ describe('FOUC Prevention Regression Tests', () => {
       // Simulate server-side render scenario (no localStorage access)
       Object.defineProperty(window, 'localStorage', {
         value: {
-          getItem: vi.fn(() => {
+          getItem: jest.fn(() => {
             throw new Error('localStorage not available');
           }),
-          setItem: vi.fn(),
-          removeItem: vi.fn(),
-          clear: vi.fn()
+          setItem: jest.fn(),
+          removeItem: jest.fn(),
+          clear: jest.fn()
         },
         writable: true
       });
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       render(
         <ThemeProvider>
@@ -446,14 +447,14 @@ describe('FOUC Prevention Regression Tests', () => {
       // Mock localStorage to throw during inline script simulation
       Object.defineProperty(window, 'localStorage', {
         value: {
-          getItem: vi.fn(() => {
+          getItem: jest.fn(() => {
             throw new Error('Storage quota exceeded');
           }),
-          setItem: vi.fn(() => {
+          setItem: jest.fn(() => {
             throw new Error('Storage quota exceeded');
           }),
-          removeItem: vi.fn(),
-          clear: vi.fn()
+          removeItem: jest.fn(),
+          clear: jest.fn()
         },
         writable: true
       });
@@ -466,7 +467,7 @@ describe('FOUC Prevention Regression Tests', () => {
         expect(true).toBe(false);
       }
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       render(
         <ThemeProvider>
@@ -488,12 +489,12 @@ describe('FOUC Prevention Regression Tests', () => {
       // Mock localStorage failure but working matchMedia
       Object.defineProperty(window, 'localStorage', {
         value: {
-          getItem: vi.fn(() => {
+          getItem: jest.fn(() => {
             throw new Error('localStorage error');
           }),
-          setItem: vi.fn(),
-          removeItem: vi.fn(),
-          clear: vi.fn()
+          setItem: jest.fn(),
+          removeItem: jest.fn(),
+          clear: jest.fn()
         },
         writable: true
       });
@@ -501,10 +502,10 @@ describe('FOUC Prevention Regression Tests', () => {
       // System prefers dark mode
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: vi.fn(() => ({
+        value: jest.fn(() => ({
           matches: true, // Prefers dark
-          addEventListener: vi.fn(),
-          removeEventListener: vi.fn()
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn()
         }))
       });
 

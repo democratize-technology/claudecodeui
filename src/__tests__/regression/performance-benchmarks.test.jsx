@@ -9,7 +9,8 @@
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, beforeEach, afterEach, describe, it, expect } from 'vitest';
+// Jest globals - no import needed
+// vi is replaced with jest in Jest environment
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { TasksSettingsProvider } from '../../contexts/TasksSettingsContext';
 import ErrorBoundary from '../../components/ErrorBoundary';
@@ -108,9 +109,9 @@ describe('Performance Benchmarking Framework', () => {
     webSocketMock = createWebSocketMock();
 
     // Mock performance APIs
-    global.performance.mark = vi.fn();
-    global.performance.measure = vi.fn();
-    global.performance.getEntriesByType = vi.fn(() => []);
+    global.performance.mark = jest.fn();
+    global.performance.measure = jest.fn();
+    global.performance.getEntriesByType = jest.fn(() => []);
 
     // Setup theme mocking
     Object.defineProperty(window, 'localStorage', {
@@ -131,7 +132,7 @@ describe('Performance Benchmarking Framework', () => {
     themeUtils.clearEvents();
     mobileNavUtils.clearMeasurements();
     webSocketMock.clearEvents();
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Initial Render Performance', () => {
@@ -343,7 +344,7 @@ describe('Performance Benchmarking Framework', () => {
 
   describe('Error Recovery Performance', () => {
     it('should recover from errors within performance budget', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       render(<IntegratedApp simulateError={true} />);
 
