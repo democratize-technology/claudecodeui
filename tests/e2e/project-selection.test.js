@@ -175,4 +175,147 @@ describe('Project Selection E2E Tests', () => {
 
     console.log('✅ Rapid click test completed');
   });
+
+  // Regression test: Ensure no console spam when clicking project items
+  test('should not spam console with project limit messages', async () => {
+    console.log('🧪 Testing for console spam regression...');
+
+    // Capture console messages
+    const consoleMessages = [];
+    page.on('console', msg => {
+      consoleMessages.push({
+        type: msg.type(),
+        text: msg.text()
+      });
+    });
+
+    const projectCards = await page.$$(
+      '[data-testid="project-card"], .project-card, .project-item, [class*="project"]'
+    );
+    expect(projectCards.length).toBeGreaterThan(0);
+
+    // Take screenshot before test
+    await global.takeScreenshot(page, 'before-console-spam-test');
+
+    // Click multiple project items
+    const clickCount = Math.min(3, projectCards.length);
+    for (let i = 0; i < clickCount; i++) {
+      await projectCards[i].click();
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Wait for any delayed console messages
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Take screenshot after clicking
+    await global.takeScreenshot(page, 'after-console-spam-test');
+
+    // Check for spam messages
+    const spamMessages = consoleMessages.filter(msg =>
+      msg.text.includes('Quick fix: Limited to') ||
+      msg.text.includes('projects remaining')
+    );
+
+    // Should have minimal or no spam messages (at most 1 for the initial load)
+    expect(spamMessages.length).toBeLessThanOrEqual(1);
+
+    console.log(`✅ Console spam test completed - found ${spamMessages.length} potential spam messages`);
+  });
+
+  // Regression test: Ensure no git validation errors for non-git projects
+  test('should handle non-git projects without validation errors', async () => {
+    console.log('🧪 Testing git validation error regression...');
+
+    // Capture console errors
+    const consoleErrors = [];
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        consoleErrors.push(msg.text());
+      }
+    });
+
+    // Capture page errors
+    const pageErrors = [];
+    page.on('pageerror', error => {
+      pageErrors.push(error.message);
+    });
+
+    const projectCards = await page.$$(
+      '[data-testid="project-card"], .project-card, .project-item, [class*="project"]'
+    );
+    expect(projectCards.length).toBeGreaterThan(0);
+
+    // Take screenshot before test
+    await global.takeScreenshot(page, 'before-git-validation-test');
+
+    // Click each project item and check for git-related errors
+    const clickCount = Math.min(3, projectCards.length);
+    for (let i = 0; i < clickCount; i++) {
+      console.log(`Clicking project ${i + 1} of ${clickCount}...`);
+      await projectCards[i].click();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Wait for any git operations to complete
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Take screenshot after clicking
+    await global.takeScreenshot(page, 'after-git-validation-test');
+
+    // Check for git validation errors
+    const gitErrors = [
+      ...consoleErrors.filter(error =>
+        error.includes('git') ||
+        error.includes('validateGitRepository') ||
+        error.includes('not a git repository')
+      ),
+      ...pageErrors.filter(error =>
+        error.includes('git') ||
+        error.includes('validateGitRepository') ||
+        error.includes('not a git repository')
+      )
+    ];
+
+    // Should not have git validation errors
+    expect(gitErrors.length).toBe(0);
+
+    console.log(`✅ Git validation test completed - found ${gitErrors.length} git errors`);
+    if (gitErrors.length > 0) {
+      console.log('Git errors found:', gitErrors);
+    }
+  });
+
+  // Test: Verify proper rendering of non-git project message
+  test('should show appropriate message for non-git projects', async () => {
+    console.log('🧪 Testing non-git project message display...');
+
+    const projectCards = await page.$$(
+      '[data-testid="project-card"], .project-card, .project-item, [class*="project"]'
+    );
+    expect(projectCards.length).toBeGreaterThan(0);
+
+    // Click a project item
+    await projectCards[0].click();
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Take screenshot after selection
+    await global.takeScreenshot(page, 'project-selected-for-git-message-test');
+
+    // Check if we can see either git interface or non-git message
+    const hasGitInterface = await page.$('.git-panel, [class*="git"], [data-testid*="git"]') !== null;
+
+    // Look for non-git repository message
+    const hasNonGitMessage = await page.evaluate(() => {
+      const text = document.body.innerText;
+      return text.includes('Not a Git repository') ||
+             text.includes('Initialize Git') ||
+             text.includes('not a git repository');
+    });
+
+    // Should have either git interface OR non-git message (not both, not neither)
+    const hasProperRendering = (hasGitInterface && !hasNonGitMessage) || (!hasGitInterface && hasNonGitMessage);
+    expect(hasProperRendering).toBe(true);
+
+    console.log(`✅ Non-git project rendering test completed - hasGitInterface: ${hasGitInterface}, hasNonGitMessage: ${hasNonGitMessage}`);
+  });
 });

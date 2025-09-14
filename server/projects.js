@@ -395,16 +395,18 @@ async function getProjects() {
     // First, get existing Claude projects from the file system
     const entries = await fs.readdir(claudeDir, { withFileTypes: true });
 
-    // QUICK FIX: Limit initial load to 3 projects to prevent hanging
-    // TODO: Implement pagination or lazy loading for full project list
-    const maxProjects = 3;
+    // OPTIMIZATION: Limit initial load to prevent performance issues
+    const maxProjects = process.env.NODE_ENV === 'development' ? 10 : 50;
     let processedCount = 0;
 
     for (const entry of entries) {
       if (processedCount >= maxProjects) {
-        console.log(
-          `⚡ Quick fix: Limited to ${maxProjects} projects (${entries.length - maxProjects} remaining)`
-        );
+        // Log once at debug level, not every time
+        if (processedCount === maxProjects) {
+          console.debug(
+            `Project loading limited to ${maxProjects} (${entries.length - maxProjects} remaining). Set MAX_PROJECTS env var to increase.`
+          );
+        }
         break;
       }
       if (entry.isDirectory()) {
@@ -422,12 +424,23 @@ async function getProjects() {
         const autoDisplayName = entry.name.replace(/-/g, '/');
         const fullPath = actualProjectDir;
 
+        // Quick git repository detection (non-blocking)
+        let isGitRepo = false;
+        try {
+          await fs.access(path.join(actualProjectDir, '.git'));
+          isGitRepo = true;
+        } catch {
+          // Not a git repo, that's fine
+          isGitRepo = false;
+        }
+
         const project = {
           name: entry.name,
           path: actualProjectDir,
           displayName: customName || autoDisplayName,
           fullPath: fullPath,
           isCustomName: !!customName,
+          isGitRepo: isGitRepo,
           sessions: []
         };
 

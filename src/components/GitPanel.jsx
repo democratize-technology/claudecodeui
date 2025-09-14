@@ -83,7 +83,7 @@ function GitPanel({ selectedProject, isMobile }) {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    if (selectedProject) {
+    if (selectedProject && selectedProject.isGitRepo) {
       fetchGitStatus();
       fetchBranches();
       fetchRemoteStatus();
@@ -939,6 +939,18 @@ function GitPanel({ selectedProject, isMobile }) {
     return (
       <div className='h-full flex items-center justify-center text-gray-500 dark:text-gray-400'>
         <p>Select a project to view source control</p>
+      </div>
+    );
+  }
+
+  if (!selectedProject.isGitRepo) {
+    return (
+      <div className='h-full flex items-center justify-center text-gray-500 dark:text-gray-400'>
+        <div className='text-center'>
+          <GitBranch className='w-12 h-12 mx-auto mb-3 opacity-50' />
+          <p className='text-lg font-medium mb-2'>Not a Git repository</p>
+          <p className='text-sm'>Initialize Git in this project to use source control features</p>
+        </div>
       </div>
     );
   }
