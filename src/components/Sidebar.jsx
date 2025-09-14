@@ -199,12 +199,18 @@ function Sidebar({
     };
   }, []);
 
-  const toggleProject = (projectName) => {
+  const toggleProject = async (projectName) => {
     const newExpanded = new Set(expandedProjects);
     if (newExpanded.has(projectName)) {
       newExpanded.delete(projectName);
     } else {
       newExpanded.add(projectName);
+
+      // Lazy load sessions when expanding project for the first time
+      const project = projects.find(p => p.name === projectName);
+      if (project && !initialSessionsLoaded.has(projectName) && !loadingSessions[projectName]) {
+        loadInitialSessions(project);
+      }
     }
     setExpandedProjects(newExpanded);
   };
@@ -408,6 +414,40 @@ function Sidebar({
     setNewProjectPath('');
   };
 
+  // Load initial sessions when a project is expanded for the first time
+  const loadInitialSessions = async (project) => {
+    if (loadingSessions[project.name] || initialSessionsLoaded.has(project.name)) {
+      return;
+    }
+
+    setLoadingSessions((prev) => ({ ...prev, [project.name]: true }));
+
+    try {
+      const result = await api.sessions(project.name, 5, 0);
+
+      // Store initial sessions in additionalSessions (which gets merged with project.sessions in getAllSessions)
+      setAdditionalSessions((prev) => ({
+        ...prev,
+        [project.name]: result.sessions || []
+      }));
+
+      // Update project metadata to indicate more sessions might be available
+      if (project.sessionMeta) {
+        project.sessionMeta = {
+          hasMore: result.hasMore || false,
+          total: result.total || 0
+        };
+      }
+
+      // Mark sessions as loaded for this project
+      setInitialSessionsLoaded((prev) => new Set([...prev, project.name]));
+    } catch (error) {
+      console.error('Error loading initial sessions:', error);
+    } finally {
+      setLoadingSessions((prev) => ({ ...prev, [project.name]: false }));
+    }
+  };
+
   const loadMoreSessions = async (project) => {
     // Check if we can load more sessions
     const canLoadMore = project.sessionMeta?.hasMore !== false;
@@ -421,22 +461,18 @@ function Sidebar({
     try {
       const currentSessionCount =
         (project.sessions?.length || 0) + (additionalSessions[project.name]?.length || 0);
-      const response = await api.sessions(project.name, 5, currentSessionCount);
+      const result = await api.sessions(project.name, 5, currentSessionCount);
 
-      if (response.ok) {
-        const result = await response.json();
+      // Store additional sessions locally
+      setAdditionalSessions((prev) => ({
+        ...prev,
+        [project.name]: [...(prev[project.name] || []), ...result.sessions]
+      }));
 
-        // Store additional sessions locally
-        setAdditionalSessions((prev) => ({
-          ...prev,
-          [project.name]: [...(prev[project.name] || []), ...result.sessions]
-        }));
-
-        // Update project metadata if needed
-        if (result.hasMore === false) {
-          // Mark that there are no more sessions to load
-          project.sessionMeta = { ...project.sessionMeta, hasMore: false };
-        }
+      // Update project metadata if needed
+      if (result.hasMore === false) {
+        // Mark that there are no more sessions to load
+        project.sessionMeta = { ...project.sessionMeta, hasMore: false };
       }
     } catch (error) {
       console.error('Error loading more sessions:', error);
